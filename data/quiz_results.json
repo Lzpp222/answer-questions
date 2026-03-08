@@ -42,5 +42,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/8 22:50:17",
     "timestamp": 1772981417534
+  },
+  {
+    "id": "gh_1772982076978_poeftc",
+    "deviceId": "smmhto65cua5hp19nxr",
+    "userName": "得到大大的",
+    "correctCount": 0,
+    "status": "挑战失败",
+    "detail": "第 1 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/8 23:01:28",
+    "timestamp": 1772982076978
   }
 ]
