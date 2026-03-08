@@ -575,6 +575,13 @@
 </head>
 <body>
   <div class="container">
+    <!-- 加载中 -->
+    <div id="screen-loading" class="screen active">
+      <div class="card" style="text-align:center;padding:24px;">
+        <p style="font-size:0.95rem;color:var(--text-muted);">加载中，请耐心等待</p>
+      </div>
+    </div>
+
     <!-- 已参与过 -->
     <div id="screen-done" class="screen">
       <div class="card already-done">
@@ -593,6 +600,13 @@
           </div>
         </div>
         <p id="done-thanks" style="margin-top: 16px; font-size: 0.95rem;">感谢您的参与！</p>
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 16px;">
+          加入学会交流群
+        </div>
+        <div class="qr-placeholder" id="done-group-qr">
+          <img src="group-qr.png" alt="学会群二维码" style="max-width:100%;max-height:100%;border-radius:8px;" onerror="this.style.display='none';var s=this.nextElementSibling;s&&(s.style.display='block');">
+          <span style="display:none;">学会群二维码<br>（请添加 group-qr.png）</span>
+        </div>
       </div>
     </div>
 
@@ -621,7 +635,6 @@
           <li>答错或超时：挑战失败，仅可获得参与奖（自选一张明信片或书签）</li>
         </ul>
         <button id="btn-understand" class="btn btn-primary">我已知晓，下一步</button>
-        <p style="margin-top:16px;font-size:0.8rem;color:#999;"><a href="admin.html" style="color:#999;">管理员入口</a></p>
       </div>
     </div>
 
@@ -700,22 +713,21 @@
           <div class="content" id="result-prize">-</div>
         </div>
         <div class="screenshot-tip">
-          📸 请截屏此页面，到工作人员处领取奖励。若后台未显示记录，可点击下方按钮复制结果发送给工作人员。
-        </div>
-        <p id="save-fail-hint" style="display:none;margin-top:10px;padding:10px;background:#ffe6e6;border:1px solid #f5c6cb;border-radius:8px;font-size:0.9rem;color:#721c24;">⚠️ 云端保存可能失败（手机网络限制），请务必点击下方按钮复制结果发送给工作人员。</p>
-        <div class="copy-result-wrap" style="margin-top: 14px;">
-          <button type="button" id="btn-copy-result" class="btn btn-outline" style="font-size: 0.95rem;">
-            📋 复制答题结果（可粘贴发给工作人员）
-          </button>
-          <p id="copy-result-msg" style="display:none;font-size:0.85rem;color:var(--success);margin-top:8px;">已复制到剪贴板</p>
+          📸 请截屏此页面，到工作人员处领取奖励。
         </div>
         <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 16px;">
           对三农学会感兴趣？扫码加入我们
         </div>
         <div class="qr-placeholder" id="qr-placeholder">
-          <!-- 将招新二维码图片命名为 qr.png 放于同目录即可显示 -->
           <img src="qr.png" alt="招新二维码" style="max-width:100%;max-height:100%;border-radius:8px;" onerror="this.style.display='none';var s=this.nextElementSibling;s&&(s.style.display='block');">
           <span style="display:none;">招新二维码<br>（请添加 qr.png）</span>
+        </div>
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 16px;">
+          加入学会交流群
+        </div>
+        <div class="qr-placeholder" id="group-qr-placeholder">
+          <img src="group-qr.png" alt="学会群二维码" style="max-width:100%;max-height:100%;border-radius:8px;" onerror="this.style.display='none';var s=this.nextElementSibling;s&&(s.style.display='block');">
+          <span style="display:none;">学会群二维码<br>（请添加 group-qr.png）</span>
         </div>
       </div>
     </div>
@@ -813,37 +825,6 @@
       if (count >= 3) return '可获得三农学会卡套';
       if (count >= 1) return '可自选三张明信片或书签';
       return '参与奖：自选一张明信片或书签';
-    }
-
-    function copyResultToClipboard() {
-      var name = (document.getElementById('result-name') || {}).textContent || '';
-      var time = (document.getElementById('result-time') || {}).textContent || '';
-      var status = (document.getElementById('result-status') || {}).textContent || '';
-      var detail = (document.getElementById('result-detail') || {}).textContent || '';
-      var prize = (document.getElementById('result-prize') || {}).textContent || '';
-      var txt = '【三农学会答题结果】\n姓名：' + name + '\n完成时间：' + time + '\n结果：' + status + (detail ? '\n详情：' + detail : '') + '\n奖励：' + prize;
-      var msgEl = document.getElementById('copy-result-msg');
-      function showOk() { if (msgEl) { msgEl.textContent = '已复制到剪贴板'; msgEl.style.display = 'block'; setTimeout(function(){ msgEl.style.display = 'none'; }, 2500); } }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(showOk).catch(function() {
-          fallbackCopy(txt, showOk);
-        });
-      } else {
-        fallbackCopy(txt, showOk);
-      }
-    }
-    function fallbackCopy(text, onDone) {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        onDone && onDone();
-      } catch (e) {}
-      document.body.removeChild(ta);
     }
 
     function showScreen(id) {
@@ -1181,17 +1162,6 @@
 
       prizeEl.textContent = (!success && !userQuit) ? '参与奖：自选一张明信片或书签' : getPrizeText(correctCount);
 
-      document.getElementById('copy-result-msg').style.display = 'none';
-      document.getElementById('save-fail-hint').style.display = 'none';
-      var copyBtn = document.getElementById('btn-copy-result');
-      if (copyBtn) copyBtn.onclick = copyResultToClipboard;
-      setTimeout(function() {
-        if (!saveSucceeded && pendingSaveData) {
-          var h = document.getElementById('save-fail-hint');
-          if (h) h.style.display = 'block';
-        }
-      }, 15000);
-
       const statusText = userQuit ? '主动结束' : (success ? '挑战成功' : '挑战失败');
       let detailText = '';
       if (userQuit) detailText = '答对 ' + correctCount + ' 道题后选择结束作答';
@@ -1303,13 +1273,17 @@
 
     (function init() {
       loadQuestions();
-      showScreen('screen-rules');
+      showScreen('screen-loading');
       var decided = false;
       function goToDone(result) {
         if (decided) return;
         decided = true;
         showStoredResult(result);
         showScreen('screen-done');
+      }
+      function showRules() {
+        if (decided) return;
+        showScreen('screen-rules');
       }
       if (/MicroMessenger/i.test(navigator.userAgent)) {
         var tip = document.getElementById('wechat-tip');
@@ -1333,7 +1307,10 @@
       function doGitHubCheck() {
         if (decided) return;
         var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
-        if (!cfg.owner || !cfg.repo) return;
+        if (!cfg.owner || !cfg.repo) {
+          showRules();
+          return;
+        }
         var base = (cfg.apiBase || '').replace(/\/$/, '');
         var url = (base ? base + '/api/check' : '/api/check') + '?deviceId=' + encodeURIComponent(getDeviceId());
         var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -1345,9 +1322,14 @@
             if (res && res.hasRecord && res.result) {
               var d = res.result;
               goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
+            } else {
+              showRules();
             }
           })
-          .catch(function() { if (tid) clearTimeout(tid); });
+          .catch(function() {
+            if (tid) clearTimeout(tid);
+            showRules();
+          });
       }
       doLocalCheck();
     })();
