@@ -575,10 +575,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- 初始加载，防止已参与设备看到规则页 -->
-    <div id="screen-loading" class="screen active" style="display:flex;align-items:center;justify-content:center;min-height:40vh;">
-      <p style="color:var(--text-muted);">加载中...</p>
-    </div>
     <!-- 已参与过 -->
     <div id="screen-done" class="screen">
       <div class="card already-done">
@@ -725,26 +721,8 @@
     </div>
   </div>
 
-  <script src="firebase-config.js"></script>
-  <script src="bmob-config.js"></script>
   <script src="github-config.js"></script>
-  <script>if(typeof BMOB_CONFIG==='undefined')window.BMOB_CONFIG={appId:'',apiKey:'',serverURL:''};if(typeof BMOB_CLASS==='undefined')window.BMOB_CLASS='QuizResult';if(typeof GITHUB_CONFIG==='undefined')window.GITHUB_CONFIG={owner:'',repo:'',branch:'main',dataPath:'data/quiz_results.json',apiBase:''};</script>
-  <script>
-    if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
-      window.FIREBASE_CONFIG = {
-        apiKey: "AIzaSyCbvuztTW-syhjAqwp2uAH2SamUM1CEFOM",
-        authDomain: "answer-recode.firebaseapp.com",
-        projectId: "answer-recode",
-        storageBucket: "answer-recode.firebasestorage.app",
-        messagingSenderId: "432504572951",
-        appId: "1:432504572951:web:1aa282e57aa0ab2f63a052",
-        measurementId: "G-8T6CEQLYE2"
-      };
-    }
-  </script>
-  <!-- 使用国内 BootCDN（手机/国内网络访问 gstatic 常失败），失败时回退 gstatic -->
-  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js" onerror="this.onerror=null;this.src='https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js'"></script>
-  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js" onerror="this.onerror=null;this.src='https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js'"></script>
+  <script>if(typeof GITHUB_CONFIG==='undefined')window.GITHUB_CONFIG={owner:'',repo:'',branch:'main',dataPath:'data/quiz_results.json',apiBase:''};</script>
   <script>
     const DEVICE_ID_KEY = 'sannong_device_id';
     const TIME_LIMITS = [20, 20, 30, 40, 40]; // 第1-5题时限（秒）
@@ -756,24 +734,6 @@
         localStorage.setItem(DEVICE_ID_KEY, id);
       }
       return id;
-    }
-
-    var firebaseDb = null;
-    function initFirebaseDb() {
-      if (firebaseDb) return firebaseDb;
-      var cfg = typeof FIREBASE_CONFIG !== 'undefined' ? FIREBASE_CONFIG : window.FIREBASE_CONFIG;
-      if (!cfg || !cfg.apiKey) { console.warn('[Firebase] 配置缺失'); return null; }
-      if (typeof firebase === 'undefined') { console.warn('[Firebase] SDK 未加载'); return null; }
-      try {
-        var fbApp;
-        try { fbApp = firebase.app(); } catch (_) { fbApp = firebase.initializeApp(cfg); }
-        firebaseDb = firebase.firestore(fbApp);
-        return firebaseDb;
-      } catch (e) { console.warn('[Firebase] 初始化失败:', e.message || e); return null; }
-    }
-    initFirebaseDb();
-    if (!firebaseDb && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
-      [1000, 2500, 5000].forEach(function(ms) { setTimeout(initFirebaseDb, ms); });
     }
 
     // 题目数据：内嵌于页面，无外部依赖，手机端稳定加载
@@ -820,60 +780,6 @@
         })
         .catch(function() { return false; });
     }
-    function trySaveToFirebaseProxy(data) {
-      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
-      if ((data.status || '') === '答题开始') return Promise.resolve(false);
-      var payload = {
-        deviceId: getDeviceId(),
-        userName: data.userName || '',
-        correctCount: data.correctCount || 0,
-        status: data.status || '',
-        detail: data.detail || '',
-        prize: data.prize || '',
-        timeStr: data.timeStr || ''
-      };
-      return fetch('/api/save-firebase', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-        .then(function(r) {
-          try { return r.json(); } catch (e) { return { ok: false }; }
-        })
-        .then(function(res) {
-          if (res && res.ok) { saveSucceeded = true; console.log('[Firebase] 已保存(服务器代理)'); return true; }
-          return false;
-        })
-        .catch(function() { return false; });
-    }
-    function trySaveToFirebase(data) {
-      if (!data || typeof data !== 'object' || data.legacy) return;
-      if ((data.status || '') === '答题开始') return;
-      if (saveSucceeded) return;
-      pendingSaveData = data;
-      initFirebaseDb();
-      if (firebaseDb) {
-        var toSave = pendingSaveData;
-        pendingSaveData = null;
-        firebaseDb.collection('quiz_results').add({
-          deviceId: getDeviceId(),
-          userName: toSave.userName || '',
-          correctCount: toSave.correctCount || 0,
-          status: toSave.status || '',
-          detail: toSave.detail || '',
-          prize: toSave.prize || '',
-          timeStr: toSave.timeStr || '',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function() { saveSucceeded = true; console.log('[Firebase] 已保存到云端'); }).catch(function(e) {
-          pendingSaveData = toSave;
-          console.error('[Firebase] 保存失败:', e.code || e.message, e);
-          if (e.code === 'permission-denied') console.error('[Firebase] 请检查 Firestore 规则是否允许写入');
-        });
-      }
-      [500, 1500, 3000, 5000, 8000, 12000].forEach(function(ms) {
-        setTimeout(function() {
-          if (saveSucceeded || !pendingSaveData) return;
-          initFirebaseDb();
-          if (firebaseDb && pendingSaveData) trySaveToFirebase(pendingSaveData);
-        }, ms);
-      });
-    }
     function trySaveToLocal(data) {
       if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
       if ((data.status || '') === '答题开始') return Promise.resolve(false);
@@ -890,84 +796,22 @@
         .then(function(r) { if (r.ok) { saveSucceeded = true; console.log('[本地] 已保存'); return true; } return false; })
         .catch(function() { return false; });
     }
-    function trySaveToBmob(data) {
-      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
-      if ((data.status || '') === '答题开始') return Promise.resolve(false);
-      var payload = {
-        deviceId: getDeviceId(),
-        userName: data.userName || '',
-        correctCount: data.correctCount || 0,
-        status: data.status || '',
-        detail: data.detail || '',
-        prize: data.prize || '',
-        timeStr: data.timeStr || ''
-      };
-      return fetch('/api/save-bmob', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-          if (res && res.ok) { saveSucceeded = true; console.log('[Bmob] 已保存(代理)'); return true; }
-          return trySaveToBmobDirect(data);
-        })
-        .catch(function() { return trySaveToBmobDirect(data); });
-    }
-    function trySaveToBmobDirect(data) {
-      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
-      if ((data.status || '') === '答题开始') return Promise.resolve(false);
-      var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-      if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) return Promise.resolve(false);
-      var base = String(cfg.serverURL).replace(/\/$/, '');
-      if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-      var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-      var body = {
-        deviceId: getDeviceId(),
-        userName: data.userName || '',
-        correctCount: data.correctCount || 0,
-        status: data.status || '',
-        detail: data.detail || '',
-        prize: data.prize || '',
-        timeStr: data.timeStr || ''
-      };
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'X-Bmob-Application-Id': cfg.appId,
-          'X-Bmob-REST-API-Key': cfg.apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      }).then(function(r) {
-        if (r.ok) { saveSucceeded = true; console.log('[Bmob] 已保存'); return true; }
-        r.text().then(function(t) { console.warn('[Bmob] 保存失败', r.status, t); });
-        return false;
-      }).catch(function(e) { console.warn('[Bmob] 请求异常', e); return false; });
-    }
     function markAsDone(data) {
       try {
-        // 并行尝试所有后端，GitHub 优先（无需备案、部署简单）
         trySaveToGitHub(data);
-        trySaveToFirebaseProxy(data);
-        trySaveToBmob(data);
-        trySaveToFirebase(data);
         trySaveToLocal(data).then(function(ok) {
           if (ok || saveSucceeded) return;
           trySaveToGitHub(data);
-          trySaveToFirebaseProxy(data);
-          trySaveToFirebase(data);
-          trySaveToBmob(data);
         });
         var retries = [800, 2000, 4000, 6000];
         retries.forEach(function(ms) {
           setTimeout(function() {
             if (saveSucceeded) return;
             trySaveToGitHub(data);
-            trySaveToFirebaseProxy(data);
-            trySaveToFirebase(data);
-            trySaveToBmob(data);
           }, ms);
         });
       } catch (e) {
-        trySaveToFirebase(data);
-        trySaveToBmob(data);
+        trySaveToGitHub(data);
       }
     }
 
@@ -1483,24 +1327,14 @@
     }
 
     (function init() {
-      var loading = document.getElementById('screen-loading');
+      loadQuestions();
+      showScreen('screen-rules');
       var decided = false;
-      function hideLoading() { if (loading) loading.classList.remove('active'); }
-      function goToRules() {
-        if (decided) return;
-        decided = true;
-        loadQuestions();
-        showScreen('screen-rules');
-        hideLoading();
-      }
-      // 超时保护：6 秒内未完成检查则直接进入规则页，避免 Bmob/Firebase 请求卡住导致一直「加载中」
-      setTimeout(function() { if (!decided) goToRules(); }, 6000);
       function goToDone(result) {
         if (decided) return;
         decided = true;
         showStoredResult(result);
         showScreen('screen-done');
-        hideLoading();
       }
       if (/MicroMessenger/i.test(navigator.userAgent)) {
         var tip = document.getElementById('wechat-tip');
@@ -1516,42 +1350,15 @@
               var d = res.result;
               goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
             } else {
-              doFirebaseCheck();
+              doGitHubCheck();
             }
           })
-          .catch(function() { doFirebaseCheck(); });
-      }
-      function doFirebaseCheck() {
-        if (decided) return;
-        initFirebaseDb();
-        if (firebaseDb) {
-          firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
-            .then(function(snap) {
-              if (decided) return;
-              if (!snap.empty) {
-                var docs = snap.docs.sort(function(a, b) {
-                  var ta = (a.data().timestamp && a.data().timestamp.toMillis) ? a.data().timestamp.toMillis() : 0;
-                  var tb = (b.data().timestamp && b.data().timestamp.toMillis) ? b.data().timestamp.toMillis() : 0;
-                  return tb - ta;
-                });
-                var d = docs[0].data();
-                goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
-              } else {
-                doBmobCheck();
-              }
-            })
-            .catch(function() {
-              if (decided) return;
-              doBmobCheck();
-            });
-        } else {
-          doBmobCheck();
-        }
+          .catch(function() { doGitHubCheck(); });
       }
       function doGitHubCheck() {
         if (decided) return;
         var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
-        if (!cfg.owner || !cfg.repo) { goToRules(); return; }
+        if (!cfg.owner || !cfg.repo) return;
         var base = (cfg.apiBase || '').replace(/\/$/, '');
         var url = (base ? base + '/api/check' : '/api/check') + '?deviceId=' + encodeURIComponent(getDeviceId());
         var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -1563,44 +1370,9 @@
             if (res && res.hasRecord && res.result) {
               var d = res.result;
               goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
-            } else {
-              goToRules();
             }
           })
-          .catch(function() {
-            if (tid) clearTimeout(tid);
-            if (decided) return;
-            goToRules();
-          });
-      }
-      function doBmobCheck() {
-        if (decided) return;
-        var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-        if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) { doGitHubCheck(); return; }
-        var base = String(cfg.serverURL).replace(/\/$/, '');
-        if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-        var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-        url += '?where=' + encodeURIComponent(JSON.stringify({deviceId: getDeviceId()}));
-        url += '&order=-createdAt&limit=5';
-        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        var tid = ctrl ? setTimeout(function() { ctrl.abort(); }, 4000) : 0;
-        fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey }, signal: ctrl ? ctrl.signal : undefined })
-          .then(function(r) { if (tid) clearTimeout(tid); return r.ok ? r.json() : { results: [] }; })
-          .then(function(res) {
-            if (decided) return;
-            var list = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
-            if (list.length > 0) {
-              var d = list[0];
-              goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
-            } else {
-              doGitHubCheck();
-            }
-          })
-          .catch(function() {
-            if (tid) clearTimeout(tid);
-            if (decided) return;
-            doGitHubCheck();
-          });
+          .catch(function() { if (tid) clearTimeout(tid); });
       }
       doLocalCheck();
     })();

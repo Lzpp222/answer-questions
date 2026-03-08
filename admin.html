@@ -64,33 +64,15 @@
           <h2 style="margin:0;">作答记录</h2>
           <button id="btnRefreshResults" style="padding:6px 12px;font-size:0.9rem;">刷新</button>
         </div>
-        <p id="firebaseHint" class="error" style="display:none;">需配置 Firebase 才能查看作答记录，请编辑 firebase-config.js</p>
-        <p id="firebaseRetry" style="display:none;margin-top:8px;"><button type="button" id="btnRetryFirebase" style="padding:6px 14px;font-size:0.9rem;">重试连接</button></p>
+        <p id="dataHint" class="error" style="display:none;">请配置 github-config.js 或确保本地服务器已启动</p>
+        <p id="dataRetry" style="display:none;margin-top:8px;"><button type="button" id="btnRetryData" style="padding:6px 14px;font-size:0.9rem;">重试</button></p>
         <div id="resultsList"></div>
       </div>
     </div>
   </div>
 
-  <script src="firebase-config.js"></script>
-  <script src="bmob-config.js"></script>
   <script src="github-config.js"></script>
-  <script>if(typeof BMOB_CONFIG==='undefined')window.BMOB_CONFIG={appId:'',apiKey:'',serverURL:''};if(typeof BMOB_CLASS==='undefined')window.BMOB_CLASS='QuizResult';if(typeof GITHUB_CONFIG==='undefined')window.GITHUB_CONFIG={owner:'',repo:'',branch:'main',dataPath:'data/quiz_results.json',apiBase:''};</script>
-  <script>
-    // 若 firebase-config.js 加载失败或为空，使用内嵌配置兜底（与 firebase-config.js 保持一致）
-    if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
-      window.FIREBASE_CONFIG = {
-        apiKey: "AIzaSyCbvuztTW-syhjAqwp2uAH2SamUM1CEFOM",
-        authDomain: "answer-recode.firebaseapp.com",
-        projectId: "answer-recode",
-        storageBucket: "answer-recode.firebasestorage.app",
-        messagingSenderId: "432504572951",
-        appId: "1:432504572951:web:1aa282e57aa0ab2f63a052",
-        measurementId: "G-8T6CEQLYE2"
-      };
-    }
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script>if(typeof GITHUB_CONFIG==='undefined')window.GITHUB_CONFIG={owner:'',repo:'',branch:'main',dataPath:'data/quiz_results.json',apiBase:''};</script>
   <script>
     const ADMIN_USER = 'Sannong';
     const ADMIN_PWD = 'LZPPadmin_sannong';
@@ -157,152 +139,15 @@
       });
     }
 
-    var db = null;
-    var resultsUnsubscribe = null;
     var localPollId = null;
-    var bmobPollId = null;
     var useLocalApi = false;
-    var bmobResults = [];
     var githubResults = [];
 
-    function initFirebase() {
-      if (db) return true;
-      if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) return false;
-      if (typeof firebase === 'undefined') return false;
-      try {
-        var app;
-        try { app = firebase.app(); } catch (_) { app = firebase.initializeApp(FIREBASE_CONFIG); }
-        db = firebase.firestore(app);
-        return true;
-      } catch (e) {
-        console.error('Firebase init:', e);
-        return false;
-      }
-    }
-
-    function ensureDbThenLoad(retriesLeft) {
-      if (initFirebase()) {
-        loadResults();
-        return;
-      }
-      if (retriesLeft > 0) {
-        setTimeout(function() { ensureDbThenLoad(retriesLeft - 1); }, 800);
-      } else {
-        showFirebaseError();
-      }
-    }
-
-    function renderBmobResults(results) {
-      var items = (results || []).map(function(d) {
-        var ts = d.createdAt ? (new Date(d.createdAt.replace(' ', 'T'))).getTime() : 0;
-        return { data: { _ts: ts, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount }, id: d.objectId, source: 'bmob' };
-      });
-      items.sort(function(a, b) { return (b.data._ts || 0) - (a.data._ts || 0); });
-      renderResultsList(items);
-    }
-    function showFirebaseError() {
-      var listEl = document.getElementById('resultsList');
-      var hintEl = document.getElementById('firebaseHint');
-      var retryEl = document.getElementById('firebaseRetry');
-      var ghCfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
-      if (ghCfg.owner && ghCfg.repo) {
-        listEl.innerHTML = '<div class="empty">正在从 GitHub 加载...</div>';
-        var base = (ghCfg.apiBase || '').replace(/\/$/, '');
-        var url = base ? base + '/api/github-results' : '/api/github-results';
-        var rawUrl = 'https://raw.githubusercontent.com/' + ghCfg.owner + '/' + ghCfg.repo + '/' + (ghCfg.branch || 'main') + '/' + (ghCfg.dataPath || 'data/quiz_results.json');
-        fetch(url).catch(function() { return fetch(rawUrl); }).then(function(r) { return r && r.ok ? r.json() : []; }).catch(function() { return []; })
-          .then(function(arr) {
-            githubResults = Array.isArray(arr) ? arr.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
-            if (githubResults.length > 0) {
-              hintEl.style.display = 'none';
-              retryEl.style.display = 'none';
-              var items = githubResults.map(function(d) {
-                var ts = d.timestamp || 0;
-                return { data: { _ts: ts, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount }, id: d.id, source: 'github' };
-              });
-              items.sort(function(a, b) { return (b.data._ts || 0) - (a.data._ts || 0); });
-              renderResultsList(items);
-              bmobPollId = setInterval(function() {
-                fetch(url).catch(function() { return fetch(rawUrl); }).then(function(r) { return r && r.ok ? r.json() : []; }).catch(function() { return []; })
-                  .then(function(arr) {
-                    githubResults = Array.isArray(arr) ? arr.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
-                    var its = githubResults.map(function(d) {
-                      var ts = d.timestamp || 0;
-                      return { data: { _ts: ts, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount }, id: d.id, source: 'github' };
-                    });
-                    its.sort(function(a, b) { return (b.data._ts || 0) - (a.data._ts || 0); });
-                    renderResultsList(its);
-                  });
-              }, 5000);
-            } else {
-              tryBmobOrShowError();
-            }
-          })
-          .catch(function() { tryBmobOrShowError(); });
-        return;
-      }
-      tryBmobOrShowError();
-      function tryBmobOrShowError() {
-      var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-      if (cfg.appId && cfg.apiKey && cfg.serverURL) {
-        listEl.innerHTML = '<div class="empty">Firebase 未连接，正在尝试 Bmob...</div>';
-        var base = String(cfg.serverURL).replace(/\/$/, '');
-        if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-        var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-        url += '?order=-createdAt&limit=500';
-        fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
-          .then(function(r) { return r.ok ? r.json() : { results: [] }; })
-          .then(function(res) {
-            bmobResults = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
-            if (bmobResults.length > 0) {
-              hintEl.style.display = 'none';
-              retryEl.style.display = 'none';
-              renderBmobResults(bmobResults);
-              if (bmobPollId) clearInterval(bmobPollId);
-              bmobPollId = setInterval(function() {
-                fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
-                  .then(function(r) { return r.ok ? r.json() : { results: [] }; })
-                  .then(function(res) {
-                    bmobResults = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
-                    renderBmobResults(bmobResults);
-                  });
-              }, 5000);
-            } else {
-              hintEl.style.display = 'block';
-              hintEl.textContent = 'Firebase 未连接。若已配置 Bmob，请完成一次手机答题后刷新。';
-              retryEl.style.display = 'block';
-              listEl.innerHTML = '';
-            }
-          })
-          .catch(function() {
-            hintEl.style.display = 'block';
-            hintEl.textContent = 'Firebase 未连接（可能网络较慢或 gstatic.com 访问受限）。请稍后点击下方重试。';
-            retryEl.style.display = 'block';
-            listEl.innerHTML = '';
-          });
-      } else {
-        hintEl.style.display = 'block';
-        hintEl.textContent = 'Firebase 未连接。请配置 firebase-config.js 或 github-config.js。';
-        retryEl.style.display = 'block';
-        listEl.innerHTML = '';
-      }
-      }
-    }
-
-    document.getElementById('btnRetryFirebase').onclick = function() {
-      db = null;
-      document.getElementById('firebaseHint').style.display = 'none';
-      document.getElementById('firebaseRetry').style.display = 'none';
-      document.getElementById('resultsList').innerHTML = '<div class="empty">连接中...</div>';
-      ensureDbThenLoad(3);
+    document.getElementById('btnRetryData').onclick = function() {
+      document.getElementById('dataHint').style.display = 'none';
+      document.getElementById('dataRetry').style.display = 'none';
+      loadResults();
     };
-
-    initFirebase();
-    if (!db) {
-      setTimeout(function() {
-        if (!db) ensureDbThenLoad(3);
-      }, 500);
-    }
 
     function renderResultsList(items) {
       var listEl = document.getElementById('resultsList');
@@ -323,31 +168,23 @@
     }
     function loadResults() {
       var listEl = document.getElementById('resultsList');
-      var hintEl = document.getElementById('firebaseHint');
-      var retryEl = document.getElementById('firebaseRetry');
+      var hintEl = document.getElementById('dataHint');
+      var retryEl = document.getElementById('dataRetry');
       hintEl.style.display = 'none';
       retryEl.style.display = 'none';
-      listEl.innerHTML = '<div class="empty">加载中...</div>';
+      listEl.innerHTML = '';
       fetch('/api/results').then(function(r) {
         if (r.ok) return r.json();
         throw new Error('not local');
       }).then(function(data) {
         useLocalApi = true;
-        if (resultsUnsubscribe) { resultsUnsubscribe(); resultsUnsubscribe = null; }
         var localItems = (data || []).filter(function(d) { return (d.status || '') !== '答题开始'; }).map(function(d) {
           var ts = d.timestamp ? (typeof d.timestamp === 'number' ? d.timestamp : 0) : 0;
           return { _ts: ts, _src: 'local', _id: d.id, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount };
         });
-        function mergeLocalAndBmob() {
-          var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
+        function mergeAndRender() {
           var ghCfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
           var all = localItems.slice();
-          if (cfg.appId && cfg.apiKey && cfg.serverURL && bmobResults.length > 0) {
-            bmobResults.forEach(function(d) {
-              var ts = d.createdAt ? (new Date(d.createdAt.replace(' ', 'T'))).getTime() : 0;
-              all.push({ _ts: ts, _src: 'bmob', _id: d.objectId, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount });
-            });
-          }
           if (ghCfg.owner && ghCfg.repo && githubResults.length > 0) {
             githubResults.forEach(function(d) {
               var ts = d.timestamp || (d.createdAt ? (new Date(d.createdAt.replace(' ', 'T'))).getTime() : 0);
@@ -359,29 +196,6 @@
           var merged = Object.values(byDevice).sort(function(a, b) { return (b._ts || 0) - (a._ts || 0); });
           renderResultsList(merged.map(function(d) { return { data: d, id: d._id, source: d._src }; }));
         }
-        mergeLocalAndBmob();
-        if (localPollId) clearInterval(localPollId);
-        function fetchBmobForLocal() {
-          fetch('/api/bmob-results')
-            .then(function(r) { return r.ok ? r.json() : []; })
-            .then(function(arr) {
-              bmobResults = Array.isArray(arr) ? arr : [];
-              mergeLocalAndBmob();
-            })
-            .catch(function() {
-              var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-              if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) return;
-              var base = String(cfg.serverURL).replace(/\/$/, '');
-              if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-              var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult') + '?order=-createdAt&limit=500';
-              fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
-                .then(function(r) { return r.ok ? r.json() : { results: [] }; })
-                .then(function(res) {
-                  bmobResults = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
-                  mergeLocalAndBmob();
-                }).catch(function() {});
-            });
-        }
         function fetchGitHubForLocal() {
           var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
           if (!cfg.owner || !cfg.repo) return;
@@ -392,11 +206,12 @@
           fetch(url).catch(function() { return fetch(rawUrl); }).then(function(r) { return r && r.ok ? r.json() : []; }).catch(function() { return []; })
             .then(function(arr) {
               githubResults = Array.isArray(arr) ? arr.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
-              mergeLocalAndBmob();
+              mergeAndRender();
             });
         }
-        fetchBmobForLocal();
+        mergeAndRender();
         fetchGitHubForLocal();
+        if (localPollId) clearInterval(localPollId);
         localPollId = setInterval(function() {
           fetch('/api/results').then(function(r) { return r.ok ? r.json() : []; }).then(function(data) {
             if (!useLocalApi) return;
@@ -404,93 +219,68 @@
               var ts = d.timestamp ? (typeof d.timestamp === 'number' ? d.timestamp : 0) : 0;
               return { _ts: ts, _src: 'local', _id: d.id, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount };
             });
-            fetchBmobForLocal();
             fetchGitHubForLocal();
           });
         }, 3000);
       }).catch(function() {
         useLocalApi = false;
-        if (!db && !initFirebase()) {
-          listEl.innerHTML = '<div class="empty">连接中...</div>';
-          ensureDbThenLoad(3);
-          return;
-        }
-        if (resultsUnsubscribe) { resultsUnsubscribe(); resultsUnsubscribe = null; }
-        if (bmobPollId) { clearInterval(bmobPollId); bmobPollId = null; }
-        bmobResults = [];
-        var lastFirebaseDocs = [];
-        function fetchBmob() {
-          var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-          if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) return;
-          var base = String(cfg.serverURL).replace(/\/$/, '');
-          if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-          var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-          url += '?order=-createdAt&limit=500';
-          fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
-            .then(function(r) { return r.ok ? r.json() : { results: [] }; })
-            .then(function(res) {
-              bmobResults = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
-              mergeAndRender();
-            }).catch(function() {});
-        }
-        function fetchGitHub() {
-          var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
-          if (!cfg.owner || !cfg.repo) return;
-          var branch = cfg.branch || 'main';
-          var path = cfg.dataPath || 'data/quiz_results.json';
-          var base = (cfg.apiBase || '').replace(/\/$/, '');
-          var url = base ? (base + '/api/github-results') : '/api/github-results';
-          var rawUrl = 'https://raw.githubusercontent.com/' + cfg.owner + '/' + cfg.repo + '/' + branch + '/' + path;
-          fetch(url).then(function(r) { return r.ok ? r.json() : fetch(rawUrl).then(function(r2) { return r2.ok ? r2.json() : []; }); })
-            .catch(function() { return fetch(rawUrl).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }); })
-            .then(function(data) {
-              githubResults = Array.isArray(data) ? data.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
-              mergeAndRender();
-            });
-        }
-        function mergeAndRender() {
-          var fbItems = lastFirebaseDocs.map(function(doc) {
-            var d = doc.data();
-            d._ts = d.timestamp && d.timestamp.toMillis ? d.timestamp.toMillis() : 0;
-            d._src = 'firebase';
-            d._id = doc.id;
-            return d;
-          });
-          var bmItems = bmobResults.map(function(d) {
-            var ts = d.createdAt ? (new Date(d.createdAt.replace(' ', 'T'))).getTime() : 0;
-            return { _ts: ts, _src: 'bmob', _id: d.objectId, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount };
-          });
-          var ghItems = githubResults.map(function(d) {
-            var ts = d.timestamp || (d.createdAt ? (new Date(d.createdAt.replace(' ', 'T'))).getTime() : 0);
-            return { _ts: ts, _src: 'github', _id: d.id, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount };
-          });
-          var byDevice = {};
-          fbItems.concat(bmItems, ghItems).forEach(function(d) {
-            var dev = d.deviceId || '';
-            if (!byDevice[dev] || (d._ts || 0) > (byDevice[dev]._ts || 0)) byDevice[dev] = d;
-          });
-          var merged = Object.values(byDevice).sort(function(a, b) { return (b._ts || 0) - (a._ts || 0); });
-          renderResultsList(merged.map(function(d) { return { data: d, id: d._id, source: d._src }; }));
-        }
-        function renderFromBmobOnly() {
-          renderBmobResults(bmobResults);
-        }
-        resultsUnsubscribe = db.collection('quiz_results').onSnapshot(function(snap) {
-          lastFirebaseDocs = snap.docs.filter(function(d) { return (d.data().status || '') !== '答题开始'; });
-          mergeAndRender();
-        }, function(e) {
-          fetchBmob();
-          fetchGitHub();
-          if (bmobResults.length > 0 || githubResults.length > 0) {
-            mergeAndRender();
-          } else {
-            listEl.innerHTML = '<div class="empty">Firebase 连接失败。若已配置 Bmob/GitHub，将显示记录。</div>';
-          }
-        });
-        fetchBmob();
-        fetchGitHub();
-        bmobPollId = setInterval(function() { fetchBmob(); fetchGitHub(); }, 5000);
+        loadFromGitHub();
       });
+    }
+    function loadFromGitHub() {
+      var listEl = document.getElementById('resultsList');
+      var hintEl = document.getElementById('dataHint');
+      var retryEl = document.getElementById('dataRetry');
+      var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
+      if (!cfg.owner || !cfg.repo) {
+        hintEl.style.display = 'block';
+        hintEl.textContent = '请配置 github-config.js（owner、repo）';
+        retryEl.style.display = 'block';
+        listEl.innerHTML = '';
+        return;
+      }
+      listEl.innerHTML = '';
+      var base = (cfg.apiBase || '').replace(/\/$/, '');
+      var url = base ? base + '/api/github-results' : '/api/github-results';
+      var rawUrl = 'https://raw.githubusercontent.com/' + cfg.owner + '/' + cfg.repo + '/' + (cfg.branch || 'main') + '/' + (cfg.dataPath || 'data/quiz_results.json');
+      fetch(url).catch(function() { return fetch(rawUrl); }).then(function(r) { return r && r.ok ? r.json() : []; }).catch(function() { return []; })
+        .then(function(arr) {
+          githubResults = Array.isArray(arr) ? arr.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
+          if (githubResults.length > 0) {
+            hintEl.style.display = 'none';
+            retryEl.style.display = 'none';
+            var items = githubResults.map(function(d) {
+              var ts = d.timestamp || 0;
+              return { data: { _ts: ts, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount }, id: d.id, source: 'github' };
+            });
+            items.sort(function(a, b) { return (b.data._ts || 0) - (a.data._ts || 0); });
+            renderResultsList(items);
+            if (localPollId) clearInterval(localPollId);
+            localPollId = setInterval(function() {
+              fetch(url).catch(function() { return fetch(rawUrl); }).then(function(r) { return r && r.ok ? r.json() : []; }).catch(function() { return []; })
+                .then(function(arr) {
+                  githubResults = Array.isArray(arr) ? arr.filter(function(d) { return (d.status || '') !== '答题开始'; }) : [];
+                  var its = githubResults.map(function(d) {
+                    var ts = d.timestamp || 0;
+                    return { data: { _ts: ts, deviceId: d.deviceId, userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize, correctCount: d.correctCount }, id: d.id, source: 'github' };
+                  });
+                  its.sort(function(a, b) { return (b.data._ts || 0) - (a.data._ts || 0); });
+                  renderResultsList(its);
+                });
+            }, 5000);
+          } else {
+            hintEl.style.display = 'block';
+            hintEl.textContent = '暂无记录，请完成一次答题后刷新';
+            retryEl.style.display = 'block';
+            listEl.innerHTML = '';
+          }
+        })
+        .catch(function() {
+          hintEl.style.display = 'block';
+          hintEl.textContent = '加载失败，请检查网络或 github-config.js';
+          retryEl.style.display = 'block';
+          listEl.innerHTML = '';
+        });
     }
 
     function delResult(btn) {
@@ -500,25 +290,13 @@
       var source = item && item.getAttribute('data-source');
       if (!deviceId) return;
       function doLoad() { loadResults(); }
-      if (source === 'github') {
-        deleteFromGitHub(deviceId, doLoad);
-        return;
-      }
-      if (useLocalApi) {
+      if (source === 'local' && useLocalApi) {
         fetch('/api/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({deviceId: deviceId}) })
           .then(function(r) { if (r.ok) loadResults(); else alert('删除失败'); })
           .catch(function() { alert('删除失败'); });
         return;
       }
-      if (db) {
-        db.collection('quiz_results').where('deviceId', '==', deviceId).get().then(function(snap) {
-          var batch = db.batch();
-          snap.docs.forEach(function(d) { batch.delete(d.ref); });
-          return batch.commit();
-        }).then(function() { deleteFromBmob(deviceId, function() { deleteFromGitHub(deviceId, doLoad); }); }).catch(function(e) { deleteFromBmob(deviceId, function() { deleteFromGitHub(deviceId, doLoad); }); });
-      } else {
-        deleteFromBmob(deviceId, function() { deleteFromGitHub(deviceId, doLoad); });
-      }
+      deleteFromGitHub(deviceId, doLoad);
     }
     function deleteFromGitHub(deviceId, onDone) {
       var cfg = typeof GITHUB_CONFIG !== 'undefined' ? GITHUB_CONFIG : {};
@@ -530,27 +308,6 @@
         .then(function(res) { if (res && res.ok) loadResults(); })
         .catch(function() {})
         .then(function() { onDone && onDone(); });
-    }
-    function deleteFromBmob(deviceId, onDone) {
-      var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
-      if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) { onDone && onDone(); return; }
-      var base = String(cfg.serverURL).replace(/\/$/, '');
-      if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
-      var url = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-      url += '?where=' + encodeURIComponent(JSON.stringify({deviceId: deviceId}));
-      fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
-        .then(function(r) { return r.ok ? r.json() : { results: [] }; })
-        .then(function(res) {
-          var list = res.results || [];
-          if (list.length === 0) { onDone && onDone(); return; }
-          var baseUrl = base + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
-          var delPromises = list.map(function(d) {
-            return fetch(baseUrl + '/' + d.objectId, { method: 'DELETE', headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } });
-          });
-          return Promise.all(delPromises);
-        })
-        .then(function() { onDone && onDone(); })
-        .catch(function() { onDone && onDone(); });
     }
   </script>
 </body>
