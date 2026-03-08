@@ -575,6 +575,10 @@
 </head>
 <body>
   <div class="container">
+    <!-- 初始加载，防止已参与设备看到规则页 -->
+    <div id="screen-loading" class="screen active" style="display:flex;align-items:center;justify-content:center;min-height:40vh;">
+      <p style="color:var(--text-muted);">加载中...</p>
+    </div>
     <!-- 已参与过 -->
     <div id="screen-done" class="screen">
       <div class="card already-done">
@@ -601,8 +605,8 @@
       ⚠️ 微信内打开可能无法保存答题记录，请点击右上角 <strong>⋯</strong> → <strong>在浏览器中打开</strong> 后重新答题
     </div>
 
-    <!-- 规则页（默认显示，手机端可先看到内容） -->
-    <div id="screen-rules" class="screen active">
+    <!-- 规则页 -->
+    <div id="screen-rules" class="screen">
       <div class="header">
         <h1>三农学会 · 有奖竞答</h1>
         <p class="subtitle">欢迎参与！请先阅读答题规则</p>
@@ -1382,9 +1386,18 @@
     }
 
     (function init() {
+      var loading = document.getElementById('screen-loading');
+      function hideLoading() { if (loading) loading.classList.remove('active'); }
+      function goToRules() { loadQuestions(); showScreen('screen-rules'); hideLoading(); }
+      function goToDone(result) { showStoredResult(result); showScreen('screen-done'); hideLoading(); }
       if (/MicroMessenger/i.test(navigator.userAgent)) {
         var tip = document.getElementById('wechat-tip');
         if (tip) tip.style.display = 'block';
+      }
+      var stored = getStoredResult();
+      if (stored) {
+        goToDone(stored);
+        return;
       }
       if (firebaseDb) {
         firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
@@ -1396,44 +1409,41 @@
                 return tb - ta;
               });
               var d = docs[0].data();
-              showStoredResult({
-                userName: d.userName,
-                status: d.status,
-                detail: d.detail,
-                timeStr: d.timeStr,
-                prize: d.prize
-              });
-              showScreen('screen-done');
+              goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
             } else {
-              var stored = getStoredResult();
-              if (stored) {
-                showStoredResult(stored);
-                showScreen('screen-done');
-              } else {
-                loadQuestions();
-                showScreen('screen-rules');
-              }
+              goToRules();
             }
           })
           .catch(function() {
-            var stored = getStoredResult();
-            if (stored) {
-              showStoredResult(stored);
-              showScreen('screen-done');
-            } else {
-              loadQuestions();
-              showScreen('screen-rules');
-            }
+            stored = getStoredResult();
+            if (stored) goToDone(stored);
+            else goToRules();
           });
       } else {
-        var stored = getStoredResult();
-        if (stored) {
-          showStoredResult(stored);
-          showScreen('screen-done');
-        } else {
-          loadQuestions();
-          showScreen('screen-rules');
+        function checkWhenReady() {
+          stored = getStoredResult();
+          if (stored) { goToDone(stored); return; }
+          initFirebaseDb();
+          if (firebaseDb) {
+            firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
+              .then(function(snap) {
+                if (!snap.empty) {
+                  var docs = snap.docs.sort(function(a, b) {
+                    var ta = (a.data().timestamp && a.data().timestamp.toMillis) ? a.data().timestamp.toMillis() : 0;
+                    var tb = (b.data().timestamp && b.data().timestamp.toMillis) ? b.data().timestamp.toMillis() : 0;
+                    return tb - ta;
+                  });
+                  var d = docs[0].data();
+                  goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
+                } else goToRules();
+              })
+              .catch(function() { goToRules(); });
+          } else {
+            goToRules();
+          }
         }
+        setTimeout(checkWhenReady, 500);
+        setTimeout(checkWhenReady, 2000);
       }
     })();
 
