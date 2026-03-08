@@ -698,8 +698,21 @@
   </div>
 
   <script src="firebase-config.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script>
+    if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+      window.FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCbvuztTW-syhjAqwp2uAH2SamUM1CEFOM",
+        authDomain: "answer-recode.firebaseapp.com",
+        projectId: "answer-recode",
+        storageBucket: "answer-recode.firebasestorage.app",
+        messagingSenderId: "432504572951",
+        appId: "1:432504572951:web:1aa282e57aa0ab2f63a052",
+        measurementId: "G-8T6CEQLYE2"
+      };
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js"></script>
   <script>
     const STORAGE_KEY = 'sannong_quiz_done';
     const DEVICE_ID_KEY = 'sannong_device_id';
@@ -716,11 +729,20 @@
     }
 
     var firebaseDb = null;
-    if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
+    function initFirebaseDb() {
+      if (firebaseDb) return;
+      if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) return;
+      if (typeof firebase === 'undefined') return;
       try {
-        var fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+        var fbApp;
+        try { fbApp = firebase.app(); } catch (_) { fbApp = firebase.initializeApp(FIREBASE_CONFIG); }
         firebaseDb = firebase.firestore(fbApp);
       } catch (e) {}
+    }
+    initFirebaseDb();
+    if (!firebaseDb && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
+      setTimeout(initFirebaseDb, 1000);
+      setTimeout(initFirebaseDb, 2500);
     }
 
     // 题目数据：内嵌于页面，无外部依赖，手机端稳定加载
@@ -774,6 +796,7 @@
           lastResult: data && typeof data === 'object' ? data : { legacy: true }
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        initFirebaseDb();
         if (firebaseDb && data && typeof data === 'object' && !data.legacy) {
           firebaseDb.collection('quiz_results').add({
             deviceId: getDeviceId(),
