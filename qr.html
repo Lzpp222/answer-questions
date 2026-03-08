@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扫码进入答题 - 三农学会有奖竞答</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d4 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: #fffef9;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(45, 90, 39, 0.12);
+      max-width: 400px;
+    }
+    h1 {
+      color: #2d5a27;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #6b5d4a;
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+    }
+    #qrcode {
+      display: inline-block;
+      padding: 16px;
+      background: #fff;
+      border-radius: 12px;
+      margin: 0 auto 20px;
+    }
+    #qrcode canvas { display: none !important; }
+    #qrcode img { display: block !important; }
+    .hint {
+      font-size: 0.9rem;
+      color: #6b5d4a;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+    .url-display {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f5f0e8;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      word-break: break-all;
+      color: #2d5a27;
+    }
+    .warn {
+      margin-top: 20px;
+      padding: 12px;
+      background: #fff3cd;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #856404;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>三农学会 · 有奖竞答</h1>
+    <p class="subtitle">扫码进入答题页面</p>
+    <div id="qrcode"></div>
+    <div class="url-display" id="url-display"></div>
+    <p class="hint">使用手机扫描上方二维码即可开始答题</p>
+    <div class="warn" id="warn" style="display: none;">
+      <strong>提示：</strong>若通过 file:// 本地打开，扫码可能无法访问。请将本文件夹部署到服务器（如 GitHub Pages、腾讯云等）后，通过 https 地址访问此页面，二维码方可正常使用。
+    </div>
+    <div class="warn wechat-tip" id="wechat-tip" style="display: none;">
+      <strong>微信扫码若一直加载：</strong>微信无法访问局域网地址。请让参与者扫码后，点击右上角 <strong>⋯</strong> → <strong>在浏览器中打开</strong>，或运行「一键启动.bat」获取可分享的公网链接。
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+  <script>
+    (function() {
+      var isFile = window.location.protocol === 'file:';
+      var quizUrl;
+      if (isFile) {
+        document.getElementById('warn').style.display = 'block';
+        document.getElementById('url-display').style.display = 'none';
+        document.getElementById('qrcode').innerHTML = '<p style="padding:40px 20px;color:#856404;">请运行 <strong>启动服务器.bat</strong><br>或部署到服务器后通过 http/https 访问此页</p>';
+        return;
+      }
+      var path = window.location.pathname.replace(/\/qr\.html(\?.*)?$/i, '/');
+      quizUrl = window.location.origin + path + 'index.html';
+      document.getElementById('url-display').textContent = quizUrl;
+      var host = window.location.hostname || '';
+      if (/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\./.test(host)) {
+        document.getElementById('wechat-tip').style.display = 'block';
+      }
+      new QRCode(document.getElementById('qrcode'), {
+        text: quizUrl,
+        width: 160,
+        height: 160,
+        colorDark: '#2d5a27',
+        colorLight: '#ffffff'
+      });
+    })();
+  </script>
+</body>
+</html>

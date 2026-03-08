@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>三农学会 · 有奖竞答</title>
+  <style>
+    :root {
+      --primary: #2d5a27;
+      --primary-light: #4a7c43;
+      --accent: #c9a227;
+      --accent-light: #e8d48b;
+      --bg-warm: #faf6f0;
+      --bg-card: #fffef9;
+      --text: #2c2416;
+      --text-muted: #6b5d4a;
+      --danger: #c0392b;
+      --success: #27ae60;
+      --shadow: 0 4px 20px rgba(45, 90, 39, 0.12);
+      --radius: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+      background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d4 50%, #f0ebe2 100%);
+      min-height: 100vh;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      min-height: 100vh;
+    }
+
+    .screen {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header {
+      text-align: center;
+      padding: 14px 0;
+      border-bottom: 2px solid var(--accent-light);
+    }
+    .header h1 {
+      font-size: 1.4rem;
+      color: var(--primary);
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    .header .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 12px 0;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(201, 162, 39, 0.2);
+    }
+
+    /* 规则页 */
+    .rules-list {
+      list-style: none;
+      margin: 10px 0;
+    }
+    .rules-list li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      line-height: 1.5;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .rules-list li::before {
+      content: '●';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+    .rules-list li strong {
+      color: var(--primary);
+    }
+
+    /* 表单 */
+    .form-group {
+      margin: 14px 0;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .form-group label .required {
+      color: var(--danger);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-group .hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* 按钮 */
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      box-shadow: 0 4px 14px rgba(45, 90, 39, 0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-accent {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      color: var(--text);
+    }
+    .btn-accent:hover {
+      transform: translateY(-2px);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      margin-top: 12px;
+    }
+    .btn-outline:hover {
+      background: rgba(45, 90, 39, 0.08);
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    /* 计时器 */
+    .timer-wrap {
+      text-align: center;
+      padding: 16px;
+      margin: 16px 0;
+      background: linear-gradient(135deg, rgba(45, 90, 39, 0.08) 0%, rgba(201, 162, 39, 0.12) 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(201, 162, 39, 0.3);
+    }
+    .timer-wrap .label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .timer-wrap .time {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-wrap.warning .time {
+      color: #d35400;
+      animation: pulse 1s infinite;
+    }
+    .timer-wrap.danger .time {
+      color: var(--danger);
+      animation: pulse 0.5s infinite;
+    }
+    .timer-wrap .timer-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    /* 答题页紧凑布局，便于手机一屏展示 */
+    #screen-quiz .header {
+      padding: 12px 0;
+    }
+    #screen-quiz .header h1 {
+      font-size: 1.35rem;
+    }
+    #screen-quiz .header .subtitle {
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+    #screen-quiz .card {
+      padding: 16px;
+      margin: 12px 0;
+    }
+    #screen-quiz .timer-wrap {
+      padding: 10px 12px;
+      margin: 10px 0;
+    }
+    #screen-quiz .timer-wrap .time {
+      font-size: 1.8rem;
+    }
+    #screen-quiz .timer-wrap .timer-hint {
+      margin-top: 4px;
+      font-size: 0.75rem;
+    }
+    #screen-quiz .question-num {
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+    }
+    #screen-quiz .question-text {
+      font-size: 1rem;
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+    #screen-quiz .options {
+      gap: 8px;
+    }
+    #screen-quiz .option {
+      padding: 12px 14px;
+      font-size: 0.95rem;
+    }
+    #screen-quiz .fill-in-area input {
+      padding: 12px 14px;
+    }
+    #screen-quiz .quit-challenge-wrap {
+      margin-top: 16px;
+      padding-top: 14px;
+    }
+    #screen-quiz .quit-challenge-wrap .quit-hint {
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+    }
+    #screen-quiz .btn-quit {
+      padding: 8px 20px !important;
+      font-size: 0.9rem !important;
+    }
+    .quit-challenge-wrap {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(45, 90, 39, 0.15);
+      text-align: center;
+    }
+    .quit-challenge-wrap .quit-hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .btn-quit {
+      width: auto !important;
+      padding: 10px 24px !important;
+      font-size: 0.95rem !important;
+      background: transparent !important;
+      border: 1px solid rgba(107, 93, 74, 0.4) !important;
+      color: var(--text-muted) !important;
+      box-shadow: none !important;
+    }
+    .btn-quit:hover {
+      border-color: var(--primary) !important;
+      color: var(--primary) !important;
+      background: rgba(45, 90, 39, 0.06) !important;
+    }
+    @keyframes pulse {
+      50% { opacity: 0.8; }
+    }
+
+    /* 题目 */
+    .question-num {
+      font-size: 0.9rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .question-text {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option {
+      padding: 16px 18px;
+      border: 2px solid #e0d9cc;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      background: white;
+    }
+    .option:hover {
+      border-color: var(--primary-light);
+      background: rgba(45, 90, 39, 0.04);
+    }
+    .option.selected {
+      border-color: var(--primary);
+      background: rgba(45, 90, 39, 0.08);
+    }
+    .option.correct {
+      border-color: var(--success);
+      background: rgba(39, 174, 96, 0.12);
+    }
+    .option.wrong {
+      border-color: var(--danger);
+      background: rgba(192, 57, 43, 0.08);
+    }
+    .option.disabled {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .option.multi-select {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .option.multi-select input[type="checkbox"] {
+      margin-top: 4px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .submit-multi {
+      margin-top: 20px;
+    }
+    .fill-in-area {
+      margin-top: 16px;
+    }
+    .fill-in-area input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .fill-in-area input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .fill-in-area .hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* 解析 */
+    .explanation {
+      margin-top: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(45, 90, 39, 0.06) 0%, rgba(201, 162, 39, 0.08) 100%);
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+    }
+    .explanation h4 {
+      font-size: 1rem;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+    .explanation p {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .correct-answer {
+      font-weight: 600;
+      color: var(--success);
+      margin-bottom: 8px;
+    }
+
+    /* 奖励提示 */
+    .reward-tip {
+      margin-top: 20px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(201, 162, 39, 0.2) 0%, rgba(201, 162, 39, 0.1) 100%);
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(201, 162, 39, 0.4);
+    }
+    .reward-tip .count {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .reward-tip .prize {
+      font-size: 1rem;
+      color: var(--text);
+      margin-top: 4px;
+    }
+
+    /* 结果页 */
+    .result-card {
+      text-align: center;
+      padding: 20px 16px;
+    }
+    .result-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+    .result-icon.success { color: var(--success); }
+    .result-icon.fail { color: var(--danger); }
+    .result-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .result-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .result-info {
+      text-align: left;
+      background: rgba(45, 90, 39, 0.06);
+      padding: 14px;
+      border-radius: 12px;
+      margin: 14px 0;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .result-info .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(45, 90, 39, 0.2);
+    }
+    .result-info .row:last-child {
+      border-bottom: none;
+    }
+    .result-prize {
+      margin: 16px 0;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(201, 162, 39, 0.25) 0%, rgba(201, 162, 39, 0.1) 100%);
+      border-radius: 12px;
+      border: 2px solid rgba(201, 162, 39, 0.5);
+    }
+    .result-prize .title {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .result-prize .content {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .screenshot-tip {
+      margin: 14px 0;
+      padding: 12px;
+      font-size: 0.9rem;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      color: #856404;
+      text-align: center;
+    }
+    .qr-placeholder {
+      width: 150px;
+      height: 150px;
+      margin: 14px auto;
+      background: #f0ebe2;
+      border: 2px dashed #c9a227;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 16px;
+    }
+    .qr-placeholder img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+    }
+
+    /* 已参与提示 */
+    .already-done {
+      text-align: center;
+      padding: 20px 16px;
+    }
+    .already-done .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+    .already-done p {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .already-done .done-result .result-info {
+      background: rgba(45, 90, 39, 0.06);
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.9rem;
+      margin-top: 8px;
+      display: none;
+    }
+    .error-msg.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 已参与过 -->
+    <div id="screen-done" class="screen">
+      <div class="card already-done">
+        <div class="icon" id="done-icon">📋</div>
+        <p id="done-msg">您已在本设备参与过答题活动，每台设备仅可参与一次。</p>
+        <div id="done-result" class="done-result" style="display: none;">
+          <div class="result-info" style="margin-top: 20px;">
+            <div class="row"><span>完成时间</span><span id="done-time">-</span></div>
+            <div class="row"><span>挑战者</span><span id="done-name">-</span></div>
+            <div class="row"><span>最终结果</span><span id="done-status">-</span></div>
+            <div class="row" id="done-detail-row" style="display: none;"><span>详情</span><span id="done-detail">-</span></div>
+          </div>
+          <div class="result-prize" style="margin-top: 16px;">
+            <div class="title">可获得奖励</div>
+            <div class="content" id="done-prize">-</div>
+          </div>
+        </div>
+        <p id="done-thanks" style="margin-top: 16px; font-size: 0.95rem;">感谢您的参与！</p>
+      </div>
+    </div>
+
+    <!-- 规则页（默认显示，手机端可先看到内容） -->
+    <div id="screen-rules" class="screen active">
+      <div class="header">
+        <h1>三农学会 · 有奖竞答</h1>
+        <p class="subtitle">欢迎参与！请先阅读答题规则</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--primary);">📜 答题规则</h3>
+        <ul class="rules-list">
+          <li>每人最多可<strong>连续作答5题</strong>，答错或超时即挑战失败</li>
+          <li>答题过程中<strong>切出页面</strong>（如切换应用、最小化浏览器）将视为当前题目超时</li>
+          <li><strong>禁止上网查询或使用AI工具</strong>，请独立作答</li>
+          <li>每答对一题，可选择<strong>继续作答</strong>或<strong>结束作答</strong></li>
+          <li>也可随时主动选择结束挑战</li>
+          <li><strong>连续答对1题</strong>：可自选三张明信片或书签</li>
+          <li><strong>连续答对3题</strong>：可获得三农学会卡套（数量有限，先到先得）</li>
+          <li><strong>连续答对5题</strong>：可自选一本相关书籍（数量有限，先到先得）</li>
+          <li>答错或超时：挑战失败，仅可获得参与奖（自选一张明信片或书签）</li>
+        </ul>
+        <button id="btn-understand" class="btn btn-primary">我已知晓，下一步</button>
+      </div>
+    </div>
+
+    <!-- 填写信息 -->
+    <div id="screen-info" class="screen">
+      <div class="header">
+        <h1>填写信息</h1>
+        <p class="subtitle">请填写您的姓名或代号（必填）</p>
+      </div>
+      <div class="card">
+        <div class="form-group">
+          <label>姓名或代号 <span class="required">*</span></label>
+          <input type="text" id="input-name" placeholder="请输入您的姓名或想取的代号" maxlength="20">
+          <p class="hint">将用于领奖时核对身份</p>
+          <p id="name-error" class="error-msg">请填写姓名或代号</p>
+        </div>
+        <button id="btn-start" class="btn btn-primary">开始作答</button>
+      </div>
+    </div>
+
+    <!-- 答题页 -->
+    <div id="screen-quiz" class="screen">
+      <div class="header">
+        <h1>第 <span id="current-q-num">1</span> 题</h1>
+        <p class="subtitle" id="quiz-subtitle">请选择正确答案</p>
+      </div>
+      <div class="card">
+        <div class="timer-wrap" id="timer-wrap">
+          <div class="label">剩余时间</div>
+          <div class="time" id="timer-display">20</div>
+          <p class="timer-hint">切屏将立即按超时处理；禁止上网查询或使用AI工具</p>
+        </div>
+        <div class="question-num" id="question-num-label">第 1 题</div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options" id="options"></div>
+        <div class="fill-in-area" id="fill-in-area" style="display: none;">
+          <input type="text" id="fill-input" placeholder="请输入答案">
+          <p class="hint" id="fill-hint">多个答案请用顿号、逗号或空格分隔</p>
+        </div>
+        <div id="explanation-area" style="display: none;"></div>
+        <div id="reward-tip-area" style="display: none;"></div>
+        <div id="submit-multi-area" style="display: none; margin-top: 20px;">
+          <button id="btn-submit-multi" class="btn btn-primary">确认作答</button>
+        </div>
+        <div id="submit-fill-area" style="display: none; margin-top: 20px;">
+          <button id="btn-submit-fill" class="btn btn-primary">确认作答</button>
+        </div>
+        <div id="action-area" style="display: none; margin-top: 20px;">
+          <button id="btn-continue" class="btn btn-primary">继续作答</button>
+          <button id="btn-end" class="btn btn-outline">结束作答</button>
+        </div>
+        <div id="quit-challenge-area" class="quit-challenge-wrap">
+          <p class="quit-hint">退出即结束作答，已答对题目对应的奖励仍可领取</p>
+          <button type="button" id="btn-quit" class="btn btn-quit">退出挑战</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结果页 -->
+    <div id="screen-result" class="screen">
+      <div class="header">
+        <h1>答题完成</h1>
+      </div>
+      <div class="card result-card">
+        <div class="result-icon" id="result-icon">✓</div>
+        <div class="result-title" id="result-title">挑战成功</div>
+        <div class="result-desc" id="result-desc"></div>
+        <div class="result-info">
+          <div class="row"><span>完成时间</span><span id="result-time">-</span></div>
+          <div class="row"><span>挑战者</span><span id="result-name">-</span></div>
+          <div class="row"><span>最终结果</span><span id="result-status">-</span></div>
+          <div class="row" id="result-detail-row" style="display: none;"><span>详情</span><span id="result-detail">-</span></div>
+        </div>
+        <div class="result-prize">
+          <div class="title">可获得奖励</div>
+          <div class="content" id="result-prize">-</div>
+        </div>
+        <div class="screenshot-tip">
+          📸 请截屏此页面，到工作人员处领取奖励
+        </div>
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 16px;">
+          对三农学会感兴趣？扫码加入我们
+        </div>
+        <div class="qr-placeholder" id="qr-placeholder">
+          <!-- 将招新二维码图片命名为 qr.png 放于同目录即可显示 -->
+          <img src="qr.png" alt="招新二维码" style="max-width:100%;max-height:100%;border-radius:8px;" onerror="this.style.display='none';var s=this.nextElementSibling;s&&(s.style.display='block');">
+          <span style="display:none;">招新二维码<br>（请添加 qr.png）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // #region agent log
+    (function(){var e='http://127.0.0.1:7246/ingest/cc42165a-0e07-4c52-a05e-91fec4d61880';var d={location:'index.html:script-start',message:'page-load',data:{protocol:location.protocol,host:location.hostname,path:location.pathname},timestamp:Date.now()};fetch(e,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).catch(function(){});})();
+    // #endregion
+    const STORAGE_KEY = 'sannong_quiz_done';
+    const MAX_ATTEMPTS = 1;  // 每台设备仅可参与一次
+    const TIME_LIMITS = [20, 20, 30, 40, 40]; // 第1-5题时限（秒）
+
+    // 题目数据：内嵌于页面，无外部依赖，手机端稳定加载
+    const QUESTIONS_EMBEDDED = {"level12":[{"id":"s1","question":"推动城乡关系发展的重要方向是：","options":["A. 城乡分割","B. 城乡融合发展","C. 农村退出发展","D. 单向城市化"],"answer":"B","explanation":"城乡融合发展是新时代推进乡村振兴的重要方向。"},{"id":"s2","question":"第二轮土地承包到期后再延长多少年？","options":["A. 十年","B. 二十年","C. 三十年","D. 四十年"],"answer":"C","explanation":"党的十九大报告明确提出，第二轮土地承包到期后再延长三十年。"},{"id":"s3","question":"中央推进农村人居环境整治，重点内容之一是：","options":["A. 厕所革命","B. 农村撤并","C. 减少绿化","D. 降低道路建设"],"answer":"A","explanation":"\"厕所革命\"是农村人居环境整治的重要内容。"},{"id":"s4","question":"乡村振兴战略要求坚持农业农村：","options":["A. 优先发展","B. 单独发展","C. 缓慢发展","D. 随机发展"],"answer":"A","explanation":"坚持农业农村优先发展是实施乡村振兴战略的总方针。"},{"id":"s5","question":"农村基层党组织是领导乡村振兴的：","options":["A. 监督机构","B. 战斗堡垒","C. 临时组织","D. 市场主体"],"answer":"B","explanation":"农村基层党组织是领导乡村振兴的坚强战斗堡垒。"},{"id":"s6","question":"中央强调，全面推进乡村振兴的总抓手是：","options":["A. 乡村振兴","B. 工业扩张","C. 房地产开发","D. 资本集中"],"answer":"A","explanation":"全面推进乡村振兴是新时代\"三农\"工作的总抓手。"},{"id":"s7","question":"中央推动城乡融合发展的重点之一是：","options":["A. 促进要素双向流动","B. 完全取消农村","C. 阻止人才流动","D. 限制资本下乡"],"answer":"A","explanation":"促进城乡要素双向自由流动是城乡融合发展的关键。"},{"id":"s8","question":"耕地保护政策中，中央强调必须严守：","options":["A. 城市开发边界","B. 生态修复红线","C. 耕地保护红线","D. 工业建设红线"],"answer":"C","explanation":"耕地保护红线是保障国家粮食安全的生命线。"},{"id":"s9","question":"中央关于农业发展的基本要求之一是走：","options":["A. 高投入高污染道路","B. 中国特色农业现代化道路","C. 单一城市化道路","D. 去农业化道路"],"answer":"B","explanation":"必须走中国特色社会主义现代化道路。"},{"id":"s10","question":"农村土地制度改革中常说的\"三权分置\"是指：","options":["A. 所有权、使用权、经营权","B. 所有权、承包权、经营权","C. 占有权、收益权、处分权","D. 所有权、承包权、流转权"],"answer":"B","explanation":"三权分置指落实集体所有权、稳定农户承包权、放活土地经营权。"},{"id":"s11","question":"我国长期高度重视「三农」工作，通常每年聚焦「三农」问题的重要政策文件是：","options":["A. 中央一号文件","B. 政府工作报告","C. 宪法修正案","D. 五年统计公报"],"answer":"A","explanation":"自2004年起，中央连续多年将一号文件聚焦\"三农\"工作。"},{"id":"s12","question":"全国第一个家庭联产承包责任制的试点是在（）","options":["A. 湖南省","B. 河北省","C. 河南省","D. 安徽省"],"answer":"D","explanation":"1978年安徽凤阳小岗村率先实行包产到户。"},{"id":"s13","question":"根据《土地管理法》的规定，征收土地按照被征收土地的（   ）给予补偿。","options":["A. 原用途","B. 开发用途","C. 建筑用途","D. 农业用途"],"answer":"A","explanation":"土地管理法规定按原用途给予补偿。"},{"id":"s14","question":"《乡土中国》认为，乡土社会维系秩序的重要基础之一是：","options":["A. 陌生人规则","B. 法律文本优先","C. 熟人社会中的礼俗","D. 完全市场交换"],"answer":"C","explanation":"费孝通指出乡土社会依靠熟人社会中的礼俗维持秩序。"},{"id":"s15","question":"《江村经济》体现的主要研究方法是：","options":["A. 实验室实验","B. 问卷抽样为主","C. 社区个案调查","D. 数学建模"],"answer":"C","explanation":"《江村经济》是费孝通在江苏开弦弓村进行的社区个案调查。"},{"id":"s16","question":"《弱者的武器》这本书主要关注的是：","options":["A. 国家军事实力","B. 弱势群体的日常反抗形式","C. 农产品国际贸易","D. 农村教育制度设计"],"answer":"B","explanation":"詹姆斯·斯科特研究农民在权力不平等中的日常反抗。"},{"id":"s17","question":"下列哪项更符合《弱者的武器》中「弱者反抗」的特点？","options":["A. 正面的公开革命","B. 日常性的隐蔽抵抗","C. 完全顺从","D. 法院诉讼为主"],"answer":"B","explanation":"农民往往采取日常性、隐蔽的抵抗形式。"},{"id":"s18","question":"《礼物的流动》主要讨论的是中国村庄中的：","options":["A. 工业制度","B. 互惠原则与社会网络","C. 电子商务技术","D. 行政区划变迁"],"answer":"B","explanation":"阎云翔研究中国农村的礼物交换与人情关系。"},{"id":"s19","question":"《一个人的村庄》更偏向于哪一种写作风格？","options":["A. 政策报告","B. 文学叙述","C. 统计年鉴","D. 法律文书"],"answer":"B","explanation":"刘亮程以文学叙述呈现乡村生活。"},{"id":"s20","question":"《一个人的村庄》探讨的主题不包括：","options":["A. 乡村记忆","B. 个体与土地的关系","C. 现代性冲击下的乡村经验","D. 全球航运金融机制"],"answer":"D","explanation":"与全球航运金融机制无关。"}],"level3":[{"id":"f1","type":"fill","question":"在中央关于「三农」工作的部署中，________被视作头等大事。","answer":"粮食安全","answers":["粮食安全"],"matchRule":"exact","explanation":"粮食安全是治国理政的头等大事。"},{"id":"f2","type":"fill","question":"推进农村公共服务体系建设，政策导向是推动城乡基本公共服务________化。","answer":"均等","answers":["均等"],"matchRule":"exact","explanation":"推动城乡基本公共服务均等化是缩小城乡差距的重要举措。"},{"id":"f3","type":"fill","question":"《江村经济》的作者是________。","answer":"费孝通","answers":["费孝通"],"matchRule":"exact","explanation":"费孝通是中国社会学和人类学的奠基人之一。"},{"id":"f4","type":"fill","question":"费孝通提出，中国传统社会的人际关系具有「________格局」的特点。","answer":"差序","answers":["差序"],"matchRule":"exact","explanation":"费孝通在《乡土中国》中提出\"差序格局\"概念。"},{"id":"f5","type":"fill","question":"巩固拓展脱贫攻坚成果，关键是守住不发生规模性________的底线。","answer":"返贫","answers":["返贫"],"matchRule":"exact","explanation":"防止规模性返贫是巩固拓展脱贫攻坚成果的底线任务。"},{"id":"f6","type":"fill","question":"中央强调，保障国家粮食安全要坚持「藏粮于地、藏粮于________」。","answer":"技","answers":["技"],"matchRule":"exact","explanation":"\"藏粮于地\"指保护耕地；\"藏粮于技\"指依靠科技进步。"},{"id":"f7","type":"fill","question":"乡村振兴的制度前提之一，是发展________经营，培育新型农业经营主体。","answer":"适度规模","answers":["适度规模"],"matchRule":"exact","explanation":"发展适度规模经营是现代农业的必然趋势。"},{"id":"f8","type":"fill","question":"中央关于乡村治理的要求之一，是健全自治、法治、________相结合的治理体系。","answer":"德治","answers":["德治"],"matchRule":"exact","explanation":"自治、法治、德治相结合是乡村治理体系的核心框架。"}],"level4":[{"id":"m4-1","question":"下列哪些表述符合《乡土中国》的基本观点？","options":["A. 中国传统基层社会具有\"熟人社会\"的特征","B. \"差序格局\"强调关系的亲疏远近有别","C. 乡土社会主要依靠现代契约和法律来维持秩序","D. 礼俗在传统社会秩序维系中具有重要作用","E. 乡土社会中的社会关系往往是高度原子化的"],"answer":"A,B,D","explanation":"费孝通提出熟人社会、差序格局、礼治秩序等概念。"},{"id":"m4-2","question":"关于《乡土中国》中的「差序格局」，下列理解正确的有：","options":["A. 它强调个体关系网络以\"己\"为中心向外推展","B. 它说明社会关系是均质的、无差别的","C. 它不同于西方社会学中强调明确边界的\"团体格局\"","D. 它有助于理解人情、面子与关系运作","E. 它意味着中国社会没有任何公共规则"],"answer":"A,C,D","explanation":"差序格局以\"己\"为中心、由近及远推展。"},{"id":"m4-3","question":"《江村经济》的学术意义主要体现在：","options":["A. 通过村庄个案透视中国乡村经济社会结构","B. 展示了社区研究和田野调查的重要性","C. 证明乡村研究只能停留在地方性描述，无法形成理论","D. 将家庭、经济、社区关系联系起来考察","E. 主要依赖宏观统计而非实地调查"],"answer":"A,B,D","explanation":"《江村经济》通过社区个案将微观与宏观联系起来。"},{"id":"m4-4","question":"《弱者的武器》主要启发我们关注：","options":["A. 弱者完全没有行动能力","B. 公开革命之外的隐蔽政治","C. 底层群体在权力不平等结构中的日常反抗","D. 拖延、装糊涂、消极服从等行为的政治意味","E. 国家政策天然会被基层无差别执行"],"answer":"B,C,D","explanation":"弱者的武器指农民日常反抗形式，具有隐蔽的政治意味。"},{"id":"m4-5","question":"从《礼物的流动》一书审视「彩礼」，其特点包括：","options":["A. 彩礼完全等同于市场交易","B. 彩礼行为必然消除社会差异和关系负担","C. 彩礼行为不仅是物质交换，也是关系表达","D. 彩礼往往与社会网络的维系有关","E. 彩礼常常嵌入人情与互惠逻辑之中"],"answer":"C,D,E","explanation":"彩礼嵌入人情与互惠逻辑，与社会网络维系相关。"},{"id":"m4-6","question":"关于《一个人的村庄》，下列说法正确的有：","options":["A. 这部作品具有较强的文学性和经验书写特点","B. 它有助于理解个体与土地、时间、记忆之间的联系","C. 它属于纯粹的中央政策文件解读","D. 它能够为乡村研究提供一种感受结构和生活世界的视角","E. 它主要分析平台劳动规制问题"],"answer":"A,B,D","explanation":"刘亮程以文学形式呈现乡村，关注个体与土地、记忆的联系。"},{"id":"m4-7","question":"围绕《她身之欲》的讨论，下列哪些理解较为合理？","options":["A. 身体不是纯自然对象，也具有社会性","B. 欲望表达常常受到家庭、伦理与制度环境影响","C. 对身体与欲望的研究有助于理解社会权力关系","D. 女性主体性问题可以脱离具体社会结构来理解","E. 农村女性经验与现代化进程、流动、劳动无关"],"answer":"A,B,C","explanation":"《她身之欲》探讨身体与欲望的社会性。"},{"id":"m4-8","question":"《中国卡车司机》对理解当代劳动问题的启发包括：","options":["A. 流动性劳动也是劳动过程研究的重要对象","B. 卡车司机表面上自主，实际上受到平台、市场和物流体系约束","C. 「自由劳动」表象下可能隐藏更强的结构性约束","D. 长时间、高风险和不稳定性是相关研究的重要维度","E. 该书有助于理解流动劳动者的生存处境"],"answer":"A,B,C,D,E","explanation":"《中国卡车司机》全面揭示平台经济下卡车司机的劳动处境。"}],"level5":[{"id":"f9","type":"fill","question":"请说出三个乡村振兴战略的总要求：________、________、________。（写对其中三个即可，顺序随意）","answer":"产业兴旺、生态宜居、乡风文明、治理有效、生活富裕","answers":["产业兴旺","生态宜居","乡风文明","治理有效","生活富裕"],"matchRule":"any3","explanation":"党的十九大提出的乡村振兴总要求。"},{"id":"f10","type":"fill","question":"三农问题中的「三农」是指________、________、________。（顺序随意）","answer":"农业、农村、农民","answers":["农业","农村","农民"],"matchRule":"all","explanation":"三农即农业、农村、农民。"},{"id":"f11","type":"fill","question":"乡村振兴包括文化振兴、________振兴、________振兴和________振兴。（顺序随意）","answer":"生态、人才、组织","answers":["生态","人才","组织"],"matchRule":"all","explanation":"乡村振兴包括产业、人才、文化、生态、组织五个方面。"},{"id":"f12","type":"fill","question":"推进乡村建设，要建设________宜业和美乡村，不断增强农民群众的获得感、________、安全感。","answer":"宜居；幸福感","answers":["宜居","幸福感"],"matchRule":"all","explanation":"建设宜居宜业和美乡村是乡村建设的目标。"}]};
+
+    let questionsData = { level12: [], level3: [], level4: [], level5: [] };
+    let usedIds = new Set();
+    let currentStep = 0;
+    let correctCount = 0;
+    let userName = '';
+    let startTime = null;
+    let timerId = null;
+    let timerStartTime = null;
+    let timerTotalSeconds = 0;
+    let timerOnEnd = null;
+    let timerUpdateFn = null;
+    let hasAnswered = false;
+    let failReason = null;
+    let failStep = null;
+
+    function getStoredData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { attemptsUsed: 0, lastResult: null };
+        if (raw === '1') return { attemptsUsed: 1, lastResult: { legacy: true } };
+        const obj = JSON.parse(raw);
+        const attemptsUsed = (obj && typeof obj.attemptsUsed === 'number') ? obj.attemptsUsed : 1;
+        const lastResult = obj && (obj.lastResult && (obj.lastResult.userName || obj.lastResult.legacy)) ? obj.lastResult : (obj.userName ? obj : { legacy: true });
+        return { attemptsUsed, lastResult };
+      } catch (e) {
+        return { attemptsUsed: 0, lastResult: null };
+      }
+    }
+
+    function getStoredResult() {
+      const { attemptsUsed, lastResult } = getStoredData();
+      return attemptsUsed >= MAX_ATTEMPTS ? lastResult : null;
+    }
+
+    function checkAlreadyDone() {
+      const { attemptsUsed } = getStoredData();
+      return attemptsUsed >= MAX_ATTEMPTS;
+    }
+
+    function markAsDone(data) {
+      try {
+        const { attemptsUsed } = getStoredData();
+        const next = attemptsUsed + 1;
+        const toSave = {
+          attemptsUsed: next,
+          lastResult: data && typeof data === 'object' ? data : { legacy: true }
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      } catch (e) {}
+    }
+
+    function loadQuestions() {
+      questionsData = QUESTIONS_EMBEDDED;
+      return Object.keys(questionsData).length > 0;
+    }
+
+    function getRandomQuestion(level) {
+      const pool = questionsData[level] || [];
+      const available = pool.filter(q => !usedIds.has(q.id));
+      if (available.length === 0) {
+        available.push(...pool);
+        usedIds.clear();
+        usedIds = new Set();
+      }
+      const q = available[Math.floor(Math.random() * available.length)];
+      usedIds.add(q.id);
+      return q;
+    }
+
+    function getPrizeText(count) {
+      if (count >= 5) return '可自选一本相关书籍';
+      if (count >= 3) return '可获得三农学会卡套';
+      if (count >= 1) return '可自选三张明信片或书签';
+      return '参与奖：自选一张明信片或书签';
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const el = document.getElementById(id);
+      if (el) el.classList.add('active');
+    }
+
+    function startTimer(seconds, onTick, onEnd) {
+      if (timerId) clearInterval(timerId);
+      timerStartTime = Date.now();
+      timerTotalSeconds = seconds;
+      timerOnEnd = onEnd;
+      const wrap = document.getElementById('timer-wrap');
+      wrap.classList.remove('warning', 'danger');
+
+      const getRemaining = () => Math.max(0, timerTotalSeconds - Math.floor((Date.now() - timerStartTime) / 1000));
+
+      const update = () => {
+        const left = getRemaining();
+        document.getElementById('timer-display').textContent = left;
+        if (left <= 5) {
+          wrap.classList.remove('warning');
+          wrap.classList.add('danger');
+        } else if (left <= 10) {
+          wrap.classList.add('warning');
+        } else {
+          wrap.classList.remove('warning', 'danger');
+        }
+        onTick && onTick(left);
+        if (left <= 0) {
+          clearInterval(timerId);
+          timerId = null;
+          timerStartTime = null;
+          timerUpdateFn = null;
+          failReason = 'timeout';
+          failStep = currentStep + 1;
+          timerOnEnd && timerOnEnd();
+        }
+      };
+      timerUpdateFn = update;
+      update();
+      timerId = setInterval(update, 1000);
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      timerStartTime = null;
+      timerOnEnd = null;
+      timerUpdateFn = null;
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        if (timerUpdateFn) timerUpdateFn();
+      } else if (document.visibilityState === 'hidden' && timerOnEnd) {
+        failReason = 'switch';
+        failStep = currentStep + 1;
+        var onEnd = timerOnEnd;
+        stopTimer();
+        onEnd();
+      }
+    });
+
+    function isMultiChoice(q) {
+      return q.options && q.answer && q.answer.includes(',') && !q.type;
+    }
+
+    function isFillIn(q) {
+      return q.type === 'fill';
+    }
+
+    function parseFillInput(str) {
+      if (!str || !str.trim()) return [];
+      return str.split(/[,，、；\s]+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function checkFillAnswer(userInput, q) {
+      const answers = q.answers || [q.answer];
+      const rule = q.matchRule || 'exact';
+      const userParts = parseFillInput(userInput);
+
+      if (rule === 'exact') {
+        const u = (userInput || '').trim();
+        return answers.some(a => u === a || u === a.trim());
+      }
+      if (rule === 'all') {
+        return answers.every(a => userParts.some(u => u === a || u === a.trim()));
+      }
+      if (rule === 'any3') {
+        const matchCount = answers.filter(a => userParts.some(u => u === a || u === a.trim())).length;
+        return matchCount >= 3;
+      }
+      return false;
+    }
+
+    function renderQuestion(q, step) {
+      const fill = isFillIn(q);
+      const multi = !fill && isMultiChoice(q);
+      const typeLabel = fill ? '填空题' : (multi ? '多选题' : '单选题');
+
+      document.getElementById('current-q-num').textContent = step + 1;
+      document.getElementById('question-num-label').textContent = `第 ${step + 1} 题 · ${typeLabel}`;
+      document.getElementById('question-text').textContent = (q.question || '').replace(/【填空题】/g, '');
+      const optsEl = document.getElementById('options');
+      const fillArea = document.getElementById('fill-in-area');
+      const fillInput = document.getElementById('fill-input');
+      const fillHint = document.getElementById('fill-hint');
+
+      optsEl.style.display = fill ? 'none' : 'block';
+      fillArea.style.display = fill ? 'block' : 'none';
+      document.getElementById('submit-multi-area').style.display = multi ? 'block' : 'none';
+      document.getElementById('submit-fill-area').style.display = fill ? 'block' : 'none';
+
+      const needMultiHint = q.matchRule === 'all' || q.matchRule === 'any3';
+      fillHint.textContent = needMultiHint ? '多个答案请用顿号、逗号或空格分隔' : '请输入答案';
+      fillHint.style.display = fill ? 'block' : 'none';
+      fillInput.value = '';
+      fillInput.disabled = false;
+      fillInput.style.background = '';
+      fillInput.style.borderColor = '';
+
+      document.getElementById('quiz-subtitle').textContent =
+        fill ? '【填空题】请在下方输入框中填写答案' : (multi ? '【多选题】请选择所有正确选项后点击确认' : '【单选题】请选择正确答案');
+
+      if (fill) {
+        optsEl.innerHTML = '';
+      } else if (multi) {
+        optsEl.innerHTML = q.options.map((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          return `<label class="option multi-select"><input type="checkbox" data-answer="${letter}"><span>${opt}</span></label>`;
+        }).join('');
+      } else {
+        optsEl.innerHTML = q.options.map((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          return `<div class="option" data-answer="${letter}">${opt}</div>`;
+        }).join('');
+      }
+
+      document.getElementById('explanation-area').style.display = 'none';
+      document.getElementById('reward-tip-area').style.display = 'none';
+      document.getElementById('action-area').style.display = 'none';
+      document.getElementById('quit-challenge-area').style.display = 'block';
+      hasAnswered = false;
+
+      const limit = TIME_LIMITS[step];
+      document.getElementById('timer-wrap').querySelector('.time').textContent = limit;
+      startTimer(limit, (left) => {}, () => {
+        if (!hasAnswered) {
+          if (fill) {
+            handleAnswer(fillInput.value, q, step);
+          } else if (multi) {
+            const selected = [...optsEl.querySelectorAll('input:checked')].map(i => i.dataset.answer).sort().join(',');
+            handleAnswer(selected || null, q, step);
+          } else {
+            handleAnswer(null, q, step);
+          }
+        }
+      });
+
+      if (fill) {
+        document.getElementById('btn-submit-fill').onclick = () => {
+          if (hasAnswered) return;
+          handleAnswer(fillInput.value, q, step);
+        };
+      } else if (multi) {
+        optsEl.querySelectorAll('label').forEach(el => {
+          el.addEventListener('click', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            const cb = el.querySelector('input');
+            if (cb && !hasAnswered) cb.checked = !cb.checked;
+          });
+        });
+        document.getElementById('btn-submit-multi').onclick = () => {
+          if (hasAnswered) return;
+          const selected = [...optsEl.querySelectorAll('input:checked')].map(i => i.dataset.answer).sort().join(',');
+          handleAnswer(selected, q, step);
+        };
+      } else {
+        optsEl.querySelectorAll('.option').forEach(el => {
+          el.addEventListener('click', () => {
+            if (hasAnswered) return;
+            handleAnswer(el.dataset.answer, q, step);
+          });
+        });
+      }
+    }
+
+    function handleAnswer(userAnswer, q, step) {
+      hasAnswered = true;
+      stopTimer();
+      const fill = isFillIn(q);
+      const multi = !fill && isMultiChoice(q);
+      const correct = fill
+        ? checkFillAnswer(userAnswer, q)
+        : (multi
+          ? (userAnswer || '').split(',').sort().join(',') === (q.answer || '').split(',').sort().join(',')
+          : userAnswer === q.answer);
+      if (!correct && !failReason) {
+        failReason = 'wrong';
+        failStep = step + 1;
+      }
+
+      const optsEl = document.getElementById('options');
+      const fillInput = document.getElementById('fill-input');
+      if (fill) {
+        fillInput.disabled = true;
+        fillInput.style.background = correct ? 'rgba(39,174,96,0.1)' : 'rgba(192,57,43,0.1)';
+        fillInput.style.borderColor = correct ? 'var(--success)' : 'var(--danger)';
+      } else if (multi) {
+        const correctLetters = (q.answer || '').split(',').map(s => s.trim());
+        const userSelected = (userAnswer || '').split(',').map(s => s.trim());
+        optsEl.querySelectorAll('label').forEach(el => {
+          el.classList.add('disabled');
+          el.style.pointerEvents = 'none';
+          const letter = el.querySelector('input')?.dataset.answer;
+          if (correctLetters.includes(letter)) el.classList.add('correct');
+          else if (userSelected.includes(letter)) el.classList.add('wrong');
+        });
+      } else {
+        optsEl.querySelectorAll('.option').forEach(el => {
+          el.classList.add('disabled');
+          const letter = el.dataset.answer;
+          if (letter === q.answer) el.classList.add('correct');
+          else if (letter === userAnswer && !correct) el.classList.add('wrong');
+        });
+      }
+
+      document.getElementById('submit-multi-area').style.display = 'none';
+      document.getElementById('submit-fill-area').style.display = 'none';
+      document.getElementById('quit-challenge-area').style.display = 'none';
+
+      const expArea = document.getElementById('explanation-area');
+      expArea.innerHTML = `
+        <div class="explanation">
+          <div class="correct-answer">正确答案：${q.answer}</div>
+          <h4>解析</h4>
+          <p>${q.explanation}</p>
+        </div>
+      `;
+      expArea.style.display = 'block';
+
+      if (correct) {
+        correctCount++;
+        const isLastQuestion = step >= 4;
+        const rewardTip = document.getElementById('reward-tip-area');
+        rewardTip.innerHTML = `
+          <div class="reward-tip">
+            <div class="count">已连续答对 ${correctCount} 道题</div>
+            <div class="prize">${getPrizeText(correctCount)}</div>
+            <p style="margin-top: 12px; font-size: 0.9rem;">${isLastQuestion ? '恭喜完成全部题目！请点击下方按钮查看结果' : '是否选择继续作答？'}</p>
+          </div>
+        `;
+        rewardTip.style.display = 'block';
+        document.getElementById('action-area').style.display = 'block';
+        document.getElementById('action-area').innerHTML = `
+          <button id="btn-continue" class="btn btn-primary">${isLastQuestion ? '完成挑战' : '继续作答'}</button>
+          ${!isLastQuestion ? '<button id="btn-end" class="btn btn-outline">结束作答</button>' : ''}
+        `;
+        document.getElementById('btn-continue').dataset.step = step;
+        document.getElementById('btn-continue').onclick = () => {
+          const s = parseInt(document.getElementById('btn-continue').dataset.step || '0', 10);
+          if (s >= 4) finishQuiz(true);
+          else nextQuestion();
+        };
+        if (!isLastQuestion) {
+          document.getElementById('btn-end').onclick = () => finishQuiz(false, true);
+        }
+      } else {
+        document.getElementById('reward-tip-area').style.display = 'none';
+        document.getElementById('action-area').style.display = 'block';
+        document.getElementById('action-area').innerHTML = `
+          <button id="btn-view-result" class="btn btn-primary">继续</button>
+        `;
+        document.getElementById('btn-view-result').onclick = () => finishQuiz(false);
+      }
+    }
+
+    function finishQuiz(success, userQuit = false) {
+      stopTimer();
+      const endTime = new Date();
+      const duration = startTime ? Math.round((endTime - startTime) / 1000) : 0;
+      const timeStr = endTime.toLocaleString('zh-CN');
+
+      showScreen('screen-result');
+      const iconEl = document.getElementById('result-icon');
+      const titleEl = document.getElementById('result-title');
+      const descEl = document.getElementById('result-desc');
+      const prizeEl = document.getElementById('result-prize');
+
+      document.getElementById('result-time').textContent = timeStr;
+      document.getElementById('result-name').textContent = userName;
+
+      const detailRow = document.getElementById('result-detail-row');
+      const detailEl = document.getElementById('result-detail');
+      detailRow.style.display = 'none';
+
+      if (userQuit) {
+        iconEl.textContent = '📋';
+        iconEl.className = 'result-icon';
+        titleEl.textContent = '已结束作答';
+        descEl.textContent = '您选择了结束作答';
+        document.getElementById('result-status').textContent = '主动结束';
+        detailEl.textContent = '答对 ' + correctCount + ' 道题后选择结束作答';
+        detailRow.style.display = 'flex';
+      } else if (success) {
+        iconEl.textContent = '🎉';
+        iconEl.className = 'result-icon success';
+        titleEl.textContent = '挑战成功！';
+        descEl.textContent = '恭喜您连续答对5道题！';
+        document.getElementById('result-status').textContent = '挑战成功';
+      } else {
+        iconEl.textContent = '😔';
+        iconEl.className = 'result-icon fail';
+        document.getElementById('result-status').textContent = '挑战失败';
+        if (failReason === 'wrong') {
+          titleEl.textContent = '挑战失败';
+          descEl.textContent = '第 ' + failStep + ' 题答错，挑战结束';
+        } else if (failReason === 'timeout') {
+          titleEl.textContent = '挑战失败';
+          descEl.textContent = '第 ' + failStep + ' 题超时，挑战结束';
+        } else if (failReason === 'switch') {
+          titleEl.textContent = '挑战失败';
+          descEl.textContent = '第 ' + failStep + ' 题因切屏视为超时，挑战结束';
+        } else {
+          titleEl.textContent = '挑战失败';
+          descEl.textContent = '答错或超时，挑战结束';
+        }
+        detailEl.textContent = '第 ' + (failStep || '?') + ' 题' + (failReason === 'wrong' ? '答错' : failReason === 'switch' ? '切屏' : '超时');
+        detailRow.style.display = 'flex';
+      }
+
+      prizeEl.textContent = (!success && !userQuit) ? '参与奖：自选一张明信片或书签' : getPrizeText(correctCount);
+
+      const statusText = userQuit ? '主动结束' : (success ? '挑战成功' : '挑战失败');
+      let detailText = '';
+      if (userQuit) detailText = '答对 ' + correctCount + ' 道题后选择结束作答';
+      else if (!success && failReason) detailText = '第 ' + failStep + ' 题' + (failReason === 'wrong' ? '答错' : failReason === 'switch' ? '切屏' : '超时');
+      markAsDone({
+        userName: userName,
+        correctCount: correctCount,
+        status: statusText,
+        detail: detailText,
+        prize: prizeEl.textContent,
+        timeStr: timeStr
+      });
+    }
+
+    function nextQuestion() {
+      currentStep++;
+      if (currentStep >= 5) {
+        finishQuiz(true);
+        return;
+      }
+      let level, q;
+      if (currentStep <= 1) {
+        level = 'level12';
+      } else if (currentStep === 2) {
+        level = 'level3';
+      } else if (currentStep === 3) {
+        level = 'level4';
+      } else {
+        level = 'level5';
+      }
+      q = getRandomQuestion(level);
+      renderQuestion(q, currentStep);
+    }
+
+    document.getElementById('btn-understand').addEventListener('click', function() {
+      loadQuestions();
+      showScreen('screen-info');
+    });
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      const name = document.getElementById('input-name').value.trim();
+      const errEl = document.getElementById('name-error');
+      if (!name) {
+        errEl.classList.add('show');
+        return;
+      }
+      errEl.classList.remove('show');
+      userName = name;
+      startTime = new Date();
+      currentStep = 0;
+      correctCount = 0;
+      failReason = null;
+      failStep = null;
+      usedIds.clear();
+
+      let q = getRandomQuestion('level12');
+      showScreen('screen-quiz');
+      renderQuestion(q, 0);
+    });
+
+    document.getElementById('input-name').addEventListener('input', () => {
+      document.getElementById('name-error').classList.remove('show');
+    });
+
+    document.getElementById('btn-continue').addEventListener('click', () => {
+      const step = parseInt(document.getElementById('btn-continue').dataset.step || '0', 10);
+      if (step >= 4) {
+        finishQuiz(true);
+      } else {
+        nextQuestion();
+      }
+    });
+
+    document.getElementById('btn-end').addEventListener('click', () => {
+      finishQuiz(false, true);
+    });
+
+    document.getElementById('btn-quit').addEventListener('click', () => {
+      if (hasAnswered) return;
+      stopTimer();
+      finishQuiz(false, true);
+    });
+
+    function showStoredResult(result) {
+      const iconEl = document.getElementById('done-icon');
+      const msgEl = document.getElementById('done-msg');
+      const resultEl = document.getElementById('done-result');
+      const thanksEl = document.getElementById('done-thanks');
+      if (result.legacy) {
+        msgEl.textContent = '您已在本设备参与过答题活动，每台设备仅可参与一次。';
+        resultEl.style.display = 'none';
+        return;
+      }
+      msgEl.textContent = '您已在本设备参与过答题活动，以下是您上次的答题结果：';
+      iconEl.textContent = result.status === '挑战成功' ? '🎉' : (result.status === '主动结束' ? '📋' : '😔');
+      document.getElementById('done-time').textContent = result.timeStr || '-';
+      document.getElementById('done-name').textContent = result.userName || '-';
+      document.getElementById('done-status').textContent = result.status || '-';
+      document.getElementById('done-prize').textContent = result.prize || '-';
+      var detailRow = document.getElementById('done-detail-row');
+      if (result.detail) {
+        document.getElementById('done-detail').textContent = result.detail;
+        detailRow.style.display = 'flex';
+      } else {
+        detailRow.style.display = 'none';
+      }
+      resultEl.style.display = 'block';
+    }
+
+    (function init() {
+      // #region agent log
+      try {
+        var stored = getStoredResult();
+        if (stored) {
+          showStoredResult(stored);
+          showScreen('screen-done');
+          fetch('http://127.0.0.1:7246/ingest/cc42165a-0e07-4c52-a05e-91fec4d61880',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:init',message:'init-done',data:{screen:'done',hasStored:!!stored},timestamp:Date.now()})}).catch(function(){});
+          return;
+        }
+        loadQuestions();
+        showScreen('screen-rules');
+        fetch('http://127.0.0.1:7246/ingest/cc42165a-0e07-4c52-a05e-91fec4d61880',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:init',message:'init-done',data:{screen:'rules',qCount:Object.keys(questionsData).length},timestamp:Date.now()})}).catch(function(){});
+      } catch(err) {
+        fetch('http://127.0.0.1:7246/ingest/cc42165a-0e07-4c52-a05e-91fec4d61880',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:init',message:'init-error',data:{err:String(err)},timestamp:Date.now()})}).catch(function(){});
+        throw err;
+      }
+      // #endregion
+    })();
+    window.onerror=function(msg,src,line,col,err){
+      // #region agent log
+      fetch('http://127.0.0.1:7246/ingest/cc42165a-0e07-4c52-a05e-91fec4d61880',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:onerror',message:'js-error',data:{msg:msg,src:src,line:line},timestamp:Date.now()})}).catch(function(){});
+      // #endregion
+    };
+
+    // 替换招新二维码：将 qr-placeholder 内的 span 改为 <img src="招新二维码.png" alt="招新">
+    // 请将 招新二维码.png 放在同目录下，或修改 src 路径
+  </script>
+</body>
+</html>
