@@ -25,8 +25,10 @@
     .question-item .exp { color: #666; font-size: 0.9rem; margin-top: 6px; }
     .result-item { padding: 12px; margin: 8px 0; background: #faf6f0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .result-item .info { flex: 1; min-width: 200px; }
-    .result-item .name { font-weight: 600; }
-    .result-item .meta { font-size: 0.9rem; color: #666; margin-top: 4px; }
+    .result-item .name { font-weight: 600; font-size: 1.05rem; }
+    .result-item .meta { font-size: 0.9rem; color: #666; margin-top: 6px; line-height: 1.6; }
+    .result-item .meta-row { margin: 2px 0; }
+    .result-item .meta-label { color: #999; display: inline-block; width: 70px; }
     .error { color: #c0392b; font-size: 0.9rem; margin-top: 8px; }
     .empty { color: #999; text-align: center; padding: 40px; }
     #adminPanel { display: none; }
@@ -154,9 +156,12 @@
     var db = null;
     if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
       try {
-        var app = firebase.initializeApp(FIREBASE_CONFIG);
+        var app;
+        try { app = firebase.app(); } catch (_) { app = firebase.initializeApp(FIREBASE_CONFIG); }
         db = firebase.firestore(app);
-      } catch (e) {}
+      } catch (e) {
+        console.error('Firebase init:', e);
+      }
     }
 
     function loadResults() {
@@ -164,19 +169,34 @@
       var hintEl = document.getElementById('firebaseHint');
       if (!db) {
         hintEl.style.display = 'block';
+        hintEl.textContent = 'Firebase 未连接。请检查 firebase-config.js 或网络。';
         listEl.innerHTML = '';
         return;
       }
       hintEl.style.display = 'none';
-      db.collection('quiz_results').orderBy('timestamp', 'desc').get().then(function(snap) {
-        var html = '';
-        snap.forEach(function(doc) {
-          var d = doc.data();
-          html += '<div class="result-item" data-id="' + doc.id + '"><div class="info"><div class="name">' + (d.userName || '-') + '</div><div class="meta">' + (d.status || '') + ' | 答对' + (d.correctCount || 0) + '题 | ' + (d.timeStr || '') + ' | 设备ID: ' + (d.deviceId || '').slice(0,8) + '...</div></div><button class="danger" onclick="delResult(\'' + doc.id + '\')">删除（允许重答）</button></div>';
+      listEl.innerHTML = '<div class="empty">加载中...</div>';
+      db.collection('quiz_results').get().then(function(snap) {
+        var docs = snap.docs.slice();
+        docs.sort(function(a, b) {
+          var ta = a.data().timestamp ? (a.data().timestamp.toMillis ? a.data().timestamp.toMillis() : 0) : 0;
+          var tb = b.data().timestamp ? (b.data().timestamp.toMillis ? b.data().timestamp.toMillis() : 0) : 0;
+          return tb - ta;
         });
-        listEl.innerHTML = html || '<div class="empty">暂无作答记录</div>';
+        var html = '';
+        docs.forEach(function(doc) {
+          var d = doc.data();
+          var meta = '<div class="meta-row"><span class="meta-label">结果：</span>' + (d.status || '-') + '</div>';
+          meta += '<div class="meta-row"><span class="meta-label">答对：</span>' + (d.correctCount || 0) + ' 题</div>';
+          meta += '<div class="meta-row"><span class="meta-label">时间：</span>' + (d.timeStr || '-') + '</div>';
+          meta += '<div class="meta-row"><span class="meta-label">详情：</span>' + (d.detail || '-') + '</div>';
+          meta += '<div class="meta-row"><span class="meta-label">奖励：</span>' + (d.prize || '-') + '</div>';
+          meta += '<div class="meta-row"><span class="meta-label">设备ID：</span>' + (d.deviceId || '-') + '</div>';
+          html += '<div class="result-item" data-id="' + doc.id + '"><div class="info"><div class="name">' + (d.userName || '-') + '</div><div class="meta">' + meta + '</div></div><button class="danger" onclick="delResult(\'' + doc.id + '\')">删除（允许重答）</button></div>';
+        });
+        listEl.innerHTML = html || '<div class="empty">暂无作答记录（请先完成一次答题）</div>';
       }).catch(function(e) {
-        listEl.innerHTML = '<div class="empty">加载失败：' + (e.message || '') + '</div>';
+        console.error('Firestore error:', e);
+        listEl.innerHTML = '<div class="empty">加载失败：' + (e.message || e.code || '') + '。请检查 Firestore 规则是否允许读写。</div>';
       });
     }
 

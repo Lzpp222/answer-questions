@@ -783,7 +783,7 @@
             prize: data.prize || '',
             timeStr: data.timeStr || '',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          }).catch(function() {});
+          }).then(function() { console.log('已保存到云端'); }).catch(function(e) { console.error('保存失败:', e); });
         }
       } catch (e) {}
     }
