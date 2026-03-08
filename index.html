@@ -726,6 +726,8 @@
   </div>
 
   <script src="firebase-config.js"></script>
+  <script src="bmob-config.js"></script>
+  <script>if(typeof BMOB_CONFIG==='undefined')window.BMOB_CONFIG={appId:'',apiKey:'',serverURL:''};if(typeof BMOB_CLASS==='undefined')window.BMOB_CLASS='QuizResult';</script>
   <script>
     if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
       window.FIREBASE_CONFIG = {
@@ -825,10 +827,69 @@
         }, ms);
       });
     }
+    function trySaveToLocal(data) {
+      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
+      if ((data.status || '') === '答题开始') return Promise.resolve(false);
+      var payload = {
+        deviceId: getDeviceId(),
+        userName: data.userName || '',
+        correctCount: data.correctCount || 0,
+        status: data.status || '',
+        detail: data.detail || '',
+        prize: data.prize || '',
+        timeStr: data.timeStr || ''
+      };
+      return fetch('/api/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+        .then(function(r) { if (r.ok) { saveSucceeded = true; console.log('[本地] 已保存'); return true; } return false; })
+        .catch(function() { return false; });
+    }
+    function trySaveToBmob(data) {
+      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
+      if ((data.status || '') === '答题开始') return Promise.resolve(false);
+      var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
+      if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) return Promise.resolve(false);
+      var url = cfg.serverURL.replace(/\/$/, '') + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
+      var body = {
+        deviceId: getDeviceId(),
+        userName: data.userName || '',
+        correctCount: data.correctCount || 0,
+        status: data.status || '',
+        detail: data.detail || '',
+        prize: data.prize || '',
+        timeStr: data.timeStr || ''
+      };
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Bmob-Application-Id': cfg.appId,
+          'X-Bmob-REST-API-Key': cfg.apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }).then(function(r) {
+        if (r.ok) { saveSucceeded = true; console.log('[Bmob] 已保存'); return true; }
+        return false;
+      }).catch(function() { return false; });
+    }
     function markAsDone(data) {
       try {
+        trySaveToLocal(data).then(function(ok) {
+          if (ok || saveSucceeded) return;
+          trySaveToFirebase(data);
+          trySaveToBmob(data);
+          var retries = [800, 2000, 4000];
+          retries.forEach(function(ms) {
+            setTimeout(function() {
+              if (saveSucceeded) return;
+              trySaveToFirebase(data);
+              trySaveToBmob(data);
+            }, ms);
+          });
+        });
+      } catch (e) {
         trySaveToFirebase(data);
-      } catch (e) {}
+        trySaveToBmob(data);
+      }
     }
 
     function loadQuestions() {
@@ -1364,6 +1425,21 @@
         var tip = document.getElementById('wechat-tip');
         if (tip) tip.style.display = 'block';
       }
+      function doLocalCheck() {
+        if (decided) return;
+        fetch('/api/check?deviceId=' + encodeURIComponent(getDeviceId()))
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(res) {
+            if (decided) return;
+            if (res && res.hasRecord && res.result) {
+              var d = res.result;
+              goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
+            } else {
+              doFirebaseCheck();
+            }
+          })
+          .catch(function() { doFirebaseCheck(); });
+      }
       function doFirebaseCheck() {
         if (decided) return;
         initFirebaseDb();
@@ -1380,31 +1456,42 @@
                 var d = docs[0].data();
                 goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
               } else {
-                goToRules();
+                doBmobCheck();
               }
             })
             .catch(function() {
               if (decided) return;
-              goToRules();
+              doBmobCheck();
             });
         } else {
-          goToRules();
+          doBmobCheck();
         }
       }
-      if (firebaseDb) {
-        doFirebaseCheck();
-      } else {
-        [300, 800, 1500, 2500, 4000].forEach(function(ms) {
-          setTimeout(function() {
+      function doBmobCheck() {
+        if (decided) return;
+        var cfg = typeof BMOB_CONFIG !== 'undefined' ? BMOB_CONFIG : {};
+        if (!cfg.appId || !cfg.apiKey || !cfg.serverURL) { goToRules(); return; }
+        var url = cfg.serverURL.replace(/\/$/, '') + '/1/classes/' + (typeof BMOB_CLASS !== 'undefined' ? BMOB_CLASS : 'QuizResult');
+        url += '?where=' + encodeURIComponent(JSON.stringify({deviceId: getDeviceId()}));
+        url += '&order=-createdAt&limit=5';
+        fetch(url, { headers: { 'X-Bmob-Application-Id': cfg.appId, 'X-Bmob-REST-API-Key': cfg.apiKey } })
+          .then(function(r) { return r.ok ? r.json() : { results: [] }; })
+          .then(function(res) {
             if (decided) return;
-            doFirebaseCheck();
-          }, ms);
-        });
-        setTimeout(function() {
-          if (decided) return;
-          doFirebaseCheck();
-        }, 5500);
+            var list = (res.results || []).filter(function(d) { return (d.status || '') !== '答题开始'; });
+            if (list.length > 0) {
+              var d = list[0];
+              goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
+            } else {
+              goToRules();
+            }
+          })
+          .catch(function() {
+            if (decided) return;
+            goToRules();
+          });
       }
+      doLocalCheck();
     })();
 
     // 替换招新二维码：将 qr-placeholder 内的 span 改为 <img src="招新二维码.png" alt="招新">
