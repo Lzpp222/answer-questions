@@ -224,7 +224,7 @@
       hintEl.style.display = 'none';
       listEl.innerHTML = '<div class="empty">加载中...</div>';
       db.collection('quiz_results').get().then(function(snap) {
-        var docs = snap.docs.slice();
+        var docs = snap.docs.filter(function(d) { return (d.data().status || '') !== '答题开始'; });
         docs.sort(function(a, b) {
           var ta = a.data().timestamp ? (a.data().timestamp.toMillis ? a.data().timestamp.toMillis() : 0) : 0;
           var tb = b.data().timestamp ? (b.data().timestamp.toMillis ? b.data().timestamp.toMillis() : 0) : 0;

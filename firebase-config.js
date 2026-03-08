@@ -3,7 +3,11 @@
 // 2. 项目设置 -> 常规 -> 您的应用 -> 添加 Web 应用
 // 3. 复制配置填入下方
 // 4. 启用 Firestore：构建 -> Firestore 数据库 -> 创建数据库
-// 5. 规则设为：allow read, write: if true; （仅用于活动，生产环境请加强安全）
+// 5. 【重要】Firestore 规则：控制台 -> Firestore -> 规则，必须包含：
+//    match /databases/{database}/documents {
+//      match /quiz_results/{doc} { allow read, write: if true; }
+//    }
+//    否则无法写入，管理员后台看不到记录
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyCbvuztTW-syhjAqwp2uAH2SamUM1CEFOM",
   authDomain: "answer-recode.firebaseapp.com",

@@ -54,8 +54,8 @@
         var db = firebase.firestore(app);
         logs.push({ ok: true, msg: 'Firestore 实例创建成功' });
 
-        db.collection('quiz_results').limit(1).get().then(function(snap) {
-          logs.push({ ok: true, msg: '读取成功，当前记录数: ' + snap.size });
+        db.collection('quiz_results').get().then(function(snap) {
+          logs.push({ ok: true, msg: '读取成功，当前总记录数: ' + snap.size });
           return db.collection('quiz_results').add({
             _test: true,
             time: firebase.firestore.FieldValue.serverTimestamp()
