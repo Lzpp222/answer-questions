@@ -1387,9 +1387,22 @@
 
     (function init() {
       var loading = document.getElementById('screen-loading');
+      var decided = false;
       function hideLoading() { if (loading) loading.classList.remove('active'); }
-      function goToRules() { loadQuestions(); showScreen('screen-rules'); hideLoading(); }
-      function goToDone(result) { showStoredResult(result); showScreen('screen-done'); hideLoading(); }
+      function goToRules() {
+        if (decided) return;
+        decided = true;
+        loadQuestions();
+        showScreen('screen-rules');
+        hideLoading();
+      }
+      function goToDone(result) {
+        if (decided) return;
+        decided = true;
+        showStoredResult(result);
+        showScreen('screen-done');
+        hideLoading();
+      }
       if (/MicroMessenger/i.test(navigator.userAgent)) {
         var tip = document.getElementById('wechat-tip');
         if (tip) tip.style.display = 'block';
@@ -1399,51 +1412,56 @@
         goToDone(stored);
         return;
       }
-      if (firebaseDb) {
-        firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
-          .then(function(snap) {
-            if (!snap.empty) {
-              var docs = snap.docs.sort(function(a, b) {
-                var ta = (a.data().timestamp && a.data().timestamp.toMillis) ? a.data().timestamp.toMillis() : 0;
-                var tb = (b.data().timestamp && b.data().timestamp.toMillis) ? b.data().timestamp.toMillis() : 0;
-                return tb - ta;
-              });
-              var d = docs[0].data();
-              goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
-            } else {
-              goToRules();
-            }
-          })
-          .catch(function() {
-            stored = getStoredResult();
-            if (stored) goToDone(stored);
-            else goToRules();
-          });
-      } else {
-        function checkWhenReady() {
+      function doFirebaseCheck() {
+        if (decided) return;
+        initFirebaseDb();
+        if (firebaseDb) {
+          firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
+            .then(function(snap) {
+              if (decided) return;
+              if (!snap.empty) {
+                var docs = snap.docs.sort(function(a, b) {
+                  var ta = (a.data().timestamp && a.data().timestamp.toMillis) ? a.data().timestamp.toMillis() : 0;
+                  var tb = (b.data().timestamp && b.data().timestamp.toMillis) ? b.data().timestamp.toMillis() : 0;
+                  return tb - ta;
+                });
+                var d = docs[0].data();
+                goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
+              } else {
+                stored = getStoredResult();
+                if (stored) goToDone(stored);
+                else goToRules();
+              }
+            })
+            .catch(function() {
+              if (decided) return;
+              stored = getStoredResult();
+              if (stored) goToDone(stored);
+              else goToRules();
+            });
+        } else {
           stored = getStoredResult();
-          if (stored) { goToDone(stored); return; }
-          initFirebaseDb();
-          if (firebaseDb) {
-            firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(5).get()
-              .then(function(snap) {
-                if (!snap.empty) {
-                  var docs = snap.docs.sort(function(a, b) {
-                    var ta = (a.data().timestamp && a.data().timestamp.toMillis) ? a.data().timestamp.toMillis() : 0;
-                    var tb = (b.data().timestamp && b.data().timestamp.toMillis) ? b.data().timestamp.toMillis() : 0;
-                    return tb - ta;
-                  });
-                  var d = docs[0].data();
-                  goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
-                } else goToRules();
-              })
-              .catch(function() { goToRules(); });
-          } else {
-            goToRules();
-          }
+          if (stored) goToDone(stored);
+          else goToRules();
         }
-        setTimeout(checkWhenReady, 500);
-        setTimeout(checkWhenReady, 2000);
+      }
+      if (firebaseDb) {
+        doFirebaseCheck();
+      } else {
+        [300, 800, 1500, 2500, 4000].forEach(function(ms) {
+          setTimeout(function() {
+            if (decided) return;
+            stored = getStoredResult();
+            if (stored) { goToDone(stored); return; }
+            doFirebaseCheck();
+          }, ms);
+        });
+        setTimeout(function() {
+          if (decided) return;
+          stored = getStoredResult();
+          if (stored) goToDone(stored);
+          else goToRules();
+        }, 5500);
       }
     })();
 
