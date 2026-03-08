@@ -14,6 +14,6 @@
 var BMOB_CONFIG = {
   appId: '61224d8b145357eaea7dd7eb1bf0fc92',
   apiKey: 'a45327ff305af73a60be9cc36f5323bf',
-  serverURL: 'api2.bmobapp.com'   // 如 'https://xxx.bmobapp.com'，从控制台获取
+  serverURL: ''   // 无备案域名时留空，否则会卡在「加载中」；有域名时填控制台显示的 API 地址
 };
 var BMOB_CLASS = 'QuizResult';
