@@ -780,39 +780,14 @@
         })
         .catch(function() { return false; });
     }
-    function trySaveToLocal(data) {
-      if (!data || typeof data !== 'object' || data.legacy) return Promise.resolve(false);
-      if ((data.status || '') === '答题开始') return Promise.resolve(false);
-      var payload = {
-        deviceId: getDeviceId(),
-        userName: data.userName || '',
-        correctCount: data.correctCount || 0,
-        status: data.status || '',
-        detail: data.detail || '',
-        prize: data.prize || '',
-        timeStr: data.timeStr || ''
-      };
-      return fetch('/api/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-        .then(function(r) { if (r.ok) { saveSucceeded = true; console.log('[本地] 已保存'); return true; } return false; })
-        .catch(function() { return false; });
-    }
     function markAsDone(data) {
-      try {
-        trySaveToGitHub(data);
-        trySaveToLocal(data).then(function(ok) {
-          if (ok || saveSucceeded) return;
+      trySaveToGitHub(data).then(function(ok) {
+        if (ok || saveSucceeded) return;
+        setTimeout(function() {
+          if (saveSucceeded) return;
           trySaveToGitHub(data);
-        });
-        var retries = [800, 2000, 4000, 6000];
-        retries.forEach(function(ms) {
-          setTimeout(function() {
-            if (saveSucceeded) return;
-            trySaveToGitHub(data);
-          }, ms);
-        });
-      } catch (e) {
-        trySaveToGitHub(data);
-      }
+        }, 2000);
+      });
     }
 
     function loadQuestions() {
