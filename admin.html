@@ -155,6 +155,7 @@
     }
 
     var db = null;
+    var resultsUnsubscribe = null;
 
     function initFirebase() {
       if (db) return true;
@@ -223,8 +224,9 @@
       retryEl.style.display = 'none';
       hintEl.style.display = 'none';
       listEl.innerHTML = '<div class="empty">加载中...</div>';
-      db.collection('quiz_results').get().then(function(snap) {
-        var docs = snap.docs.filter(function(d) { return (d.data().status || '') !== '答题开始'; });
+      if (resultsUnsubscribe) { resultsUnsubscribe(); resultsUnsubscribe = null; }
+      resultsUnsubscribe = db.collection('quiz_results').onSnapshot(function(snap) {
+        var docs = snap.docs.slice();
         docs.sort(function(a, b) {
           var ta = a.data().timestamp ? (a.data().timestamp.toMillis ? a.data().timestamp.toMillis() : 0) : 0;
           var tb = b.data().timestamp ? (b.data().timestamp.toMillis ? b.data().timestamp.toMillis() : 0) : 0;
@@ -233,25 +235,41 @@
         var html = '';
         docs.forEach(function(doc) {
           var d = doc.data();
-          var meta = '<div class="meta-row"><span class="meta-label">结果：</span>' + (d.status || '-') + '</div>';
-          meta += '<div class="meta-row"><span class="meta-label">答对：</span>' + (d.correctCount || 0) + ' 题</div>';
+          var isStart = (d.status || '') === '答题开始';
+          var statusLabel = isStart ? '<span style="color:#f39c12;font-weight:600;">[仅开始未完成]</span> ' + (d.status || '-') : (d.status || '-');
+          var meta = '<div class="meta-row"><span class="meta-label">结果：</span>' + statusLabel + '</div>';
+          meta += '<div class="meta-row"><span class="meta-label">答对：</span>' + (d.correctCount != null ? d.correctCount : '-') + ' 题</div>';
           meta += '<div class="meta-row"><span class="meta-label">时间：</span>' + (d.timeStr || '-') + '</div>';
           meta += '<div class="meta-row"><span class="meta-label">详情：</span>' + (d.detail || '-') + '</div>';
           meta += '<div class="meta-row"><span class="meta-label">奖励：</span>' + (d.prize || '-') + '</div>';
           meta += '<div class="meta-row"><span class="meta-label">设备ID：</span>' + (d.deviceId || '-') + '</div>';
-          html += '<div class="result-item" data-id="' + doc.id + '"><div class="info"><div class="name">' + (d.userName || '-') + '</div><div class="meta">' + meta + '</div></div><button class="danger" onclick="delResult(\'' + doc.id + '\')">删除（允许重答）</button></div>';
+          var devId = (d.deviceId || '').replace(/"/g, '&quot;');
+          html += '<div class="result-item" data-id="' + doc.id + '" data-device="' + devId + '"><div class="info"><div class="name">' + (d.userName || '-') + '</div><div class="meta">' + meta + '</div></div><button class="danger" onclick="delResult(this)">删除（允许重答）</button></div>';
         });
         listEl.innerHTML = html || '<div class="empty">暂无作答记录（请先完成一次答题）</div>';
-      }).catch(function(e) {
+      }, function(e) {
         console.error('Firestore error:', e);
         listEl.innerHTML = '<div class="empty">加载失败：' + (e.message || e.code || '') + '。请检查 Firestore 规则是否允许读写。</div>';
       });
     }
 
-    function delResult(id) {
-      if (!confirm('确定删除此记录？该设备将可重新作答。')) return;
+    function delResult(btn) {
+      if (!confirm('确定删除此设备的所有记录？该设备将可重新作答。')) return;
       if (!db) return;
-      db.collection('quiz_results').doc(id).delete().then(function() {
+      var item = btn.closest('.result-item');
+      var deviceId = item && item.getAttribute('data-device');
+      function doDelete() {
+        if (deviceId) {
+          return db.collection('quiz_results').where('deviceId', '==', deviceId).get().then(function(snap) {
+            var batch = db.batch();
+            snap.docs.forEach(function(d) { batch.delete(d.ref); });
+            return batch.commit();
+          });
+        }
+        var id = item && item.getAttribute('data-id');
+        return id ? db.collection('quiz_results').doc(id).delete() : Promise.reject(new Error('无记录'));
+      }
+      doDelete().then(function() {
         loadResults();
       }).catch(function(e) {
         alert('删除失败：' + (e.message || ''));
