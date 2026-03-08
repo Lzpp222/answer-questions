@@ -65,6 +65,7 @@
           <button id="btnRefreshResults" style="padding:6px 12px;font-size:0.9rem;">刷新</button>
         </div>
         <p id="firebaseHint" class="error" style="display:none;">需配置 Firebase 才能查看作答记录，请编辑 firebase-config.js</p>
+        <p id="firebaseRetry" style="display:none;margin-top:8px;"><button type="button" id="btnRetryFirebase" style="padding:6px 14px;font-size:0.9rem;">重试连接</button></p>
         <div id="resultsList"></div>
       </div>
     </div>
@@ -154,25 +155,72 @@
     }
 
     var db = null;
-    if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
+
+    function initFirebase() {
+      if (db) return true;
+      if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) return false;
+      if (typeof firebase === 'undefined') return false;
       try {
         var app;
         try { app = firebase.app(); } catch (_) { app = firebase.initializeApp(FIREBASE_CONFIG); }
         db = firebase.firestore(app);
+        return true;
       } catch (e) {
         console.error('Firebase init:', e);
+        return false;
       }
+    }
+
+    function ensureDbThenLoad(retriesLeft) {
+      if (initFirebase()) {
+        loadResults();
+        return;
+      }
+      if (retriesLeft > 0) {
+        setTimeout(function() { ensureDbThenLoad(retriesLeft - 1); }, 800);
+      } else {
+        showFirebaseError();
+      }
+    }
+
+    function showFirebaseError() {
+      var listEl = document.getElementById('resultsList');
+      var hintEl = document.getElementById('firebaseHint');
+      var retryEl = document.getElementById('firebaseRetry');
+      hintEl.style.display = 'block';
+      hintEl.textContent = 'Firebase 未连接（可能网络较慢或 gstatic.com 访问受限）。请稍后点击下方重试。';
+      retryEl.style.display = 'block';
+      listEl.innerHTML = '';
+    }
+
+    document.getElementById('btnRetryFirebase').onclick = function() {
+      db = null;
+      document.getElementById('firebaseHint').style.display = 'none';
+      document.getElementById('firebaseRetry').style.display = 'none';
+      document.getElementById('resultsList').innerHTML = '<div class="empty">连接中...</div>';
+      ensureDbThenLoad(3);
+    };
+
+    initFirebase();
+    if (!db) {
+      setTimeout(function() {
+        if (!db) ensureDbThenLoad(3);
+      }, 500);
     }
 
     function loadResults() {
       var listEl = document.getElementById('resultsList');
       var hintEl = document.getElementById('firebaseHint');
+      var retryEl = document.getElementById('firebaseRetry');
       if (!db) {
-        hintEl.style.display = 'block';
-        hintEl.textContent = 'Firebase 未连接。请检查 firebase-config.js 或网络。';
-        listEl.innerHTML = '';
-        return;
+        if (!initFirebase()) {
+          listEl.innerHTML = '<div class="empty">连接中...</div>';
+          ensureDbThenLoad(3);
+          return;
+        }
       }
+      hintEl.style.display = 'none';
+      retryEl.style.display = 'none';
       hintEl.style.display = 'none';
       listEl.innerHTML = '<div class="empty">加载中...</div>';
       db.collection('quiz_results').get().then(function(snap) {
