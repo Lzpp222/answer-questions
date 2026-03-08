@@ -742,9 +742,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js';document.head.appendChild(s);"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js';document.head.appendChild(s);"></script>
   <script>
-    const STORAGE_KEY = 'sannong_quiz_done';
     const DEVICE_ID_KEY = 'sannong_device_id';
-    const MAX_ATTEMPTS = 1;  // 每台设备仅可参与一次
     const TIME_LIMITS = [20, 20, 30, 40, 40]; // 第1-5题时限（秒）
 
     function getDeviceId() {
@@ -793,30 +791,6 @@
     let failReason = null;
     let failStep = null;
 
-    function getStoredData() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return { attemptsUsed: 0, lastResult: null };
-        if (raw === '1') return { attemptsUsed: 1, lastResult: { legacy: true } };
-        const obj = JSON.parse(raw);
-        const attemptsUsed = (obj && typeof obj.attemptsUsed === 'number') ? obj.attemptsUsed : 1;
-        const lastResult = obj && (obj.lastResult && (obj.lastResult.userName || obj.lastResult.legacy)) ? obj.lastResult : (obj.userName ? obj : { legacy: true });
-        return { attemptsUsed, lastResult };
-      } catch (e) {
-        return { attemptsUsed: 0, lastResult: null };
-      }
-    }
-
-    function getStoredResult() {
-      const { attemptsUsed, lastResult } = getStoredData();
-      return attemptsUsed >= MAX_ATTEMPTS ? lastResult : null;
-    }
-
-    function checkAlreadyDone() {
-      const { attemptsUsed } = getStoredData();
-      return attemptsUsed >= MAX_ATTEMPTS;
-    }
-
     var pendingSaveData = null;
     var saveSucceeded = false;
     function trySaveToFirebase(data) {
@@ -852,13 +826,6 @@
     }
     function markAsDone(data) {
       try {
-        const { attemptsUsed } = getStoredData();
-        const next = attemptsUsed + 1;
-        const toSave = {
-          attemptsUsed: next,
-          lastResult: data && typeof data === 'object' ? data : { legacy: true }
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
         trySaveToFirebase(data);
       } catch (e) {}
     }
@@ -1299,10 +1266,6 @@
 
     function markAsStarted() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          attemptsUsed: 1,
-          lastResult: { legacy: true, userName: userName }
-        }));
         trySaveToFirebase({
           userName: userName,
           correctCount: 0,
@@ -1407,11 +1370,6 @@
         var tip = document.getElementById('wechat-tip');
         if (tip) tip.style.display = 'block';
       }
-      var stored = getStoredResult();
-      if (stored) {
-        goToDone(stored);
-        return;
-      }
       function doFirebaseCheck() {
         if (decided) return;
         initFirebaseDb();
@@ -1428,21 +1386,15 @@
                 var d = docs[0].data();
                 goToDone({ userName: d.userName, status: d.status, detail: d.detail, timeStr: d.timeStr, prize: d.prize });
               } else {
-                stored = getStoredResult();
-                if (stored) goToDone(stored);
-                else goToRules();
+                goToRules();
               }
             })
             .catch(function() {
               if (decided) return;
-              stored = getStoredResult();
-              if (stored) goToDone(stored);
-              else goToRules();
+              goToRules();
             });
         } else {
-          stored = getStoredResult();
-          if (stored) goToDone(stored);
-          else goToRules();
+          goToRules();
         }
       }
       if (firebaseDb) {
@@ -1451,16 +1403,12 @@
         [300, 800, 1500, 2500, 4000].forEach(function(ms) {
           setTimeout(function() {
             if (decided) return;
-            stored = getStoredResult();
-            if (stored) { goToDone(stored); return; }
             doFirebaseCheck();
           }, ms);
         });
         setTimeout(function() {
           if (decided) return;
-          stored = getStoredResult();
-          if (stored) goToDone(stored);
-          else goToRules();
+          doFirebaseCheck();
         }, 5500);
       }
     })();
