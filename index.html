@@ -559,6 +559,18 @@
     .error-msg.show {
       display: block;
     }
+    .wechat-tip {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      background: #fff3cd;
+      border-bottom: 1px solid #ffc107;
+      color: #856404;
+      text-align: center;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -582,6 +594,11 @@
         </div>
         <p id="done-thanks" style="margin-top: 16px; font-size: 0.95rem;">感谢您的参与！</p>
       </div>
+    </div>
+
+    <!-- 微信内访问提示 -->
+    <div id="wechat-tip" class="wechat-tip" style="display:none;">
+      ⚠️ 微信内打开可能无法保存答题记录，请点击右上角 <strong>⋯</strong> → <strong>在浏览器中打开</strong> 后重新答题
     </div>
 
     <!-- 规则页（默认显示，手机端可先看到内容） -->
@@ -711,8 +728,9 @@
       };
     }
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js"></script>
+  <!-- 优先使用国内 BootCDN，微信环境可能更稳定 -->
+  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js'"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js'"></script>
   <script>
     const STORAGE_KEY = 'sannong_quiz_done';
     const DEVICE_ID_KEY = 'sannong_device_id';
@@ -787,6 +805,29 @@
       return attemptsUsed >= MAX_ATTEMPTS;
     }
 
+    var pendingSaveData = null;
+    function trySaveToFirebase(data) {
+      if (!data || typeof data !== 'object' || data.legacy) return;
+      pendingSaveData = data;
+      initFirebaseDb();
+      if (firebaseDb) {
+        var toSave = pendingSaveData;
+        pendingSaveData = null;
+        firebaseDb.collection('quiz_results').add({
+          deviceId: getDeviceId(),
+          userName: toSave.userName || '',
+          correctCount: toSave.correctCount || 0,
+          status: toSave.status || '',
+          detail: toSave.detail || '',
+          prize: toSave.prize || '',
+          timeStr: toSave.timeStr || '',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function() { console.log('已保存到云端'); }).catch(function(e) { console.error('保存失败:', e); });
+      } else {
+        setTimeout(function() { initFirebaseDb(); if (pendingSaveData && firebaseDb) trySaveToFirebase(pendingSaveData); }, 500);
+        setTimeout(function() { initFirebaseDb(); if (pendingSaveData && firebaseDb) trySaveToFirebase(pendingSaveData); }, 1500);
+      }
+    }
     function markAsDone(data) {
       try {
         const { attemptsUsed } = getStoredData();
@@ -796,19 +837,7 @@
           lastResult: data && typeof data === 'object' ? data : { legacy: true }
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-        initFirebaseDb();
-        if (firebaseDb && data && typeof data === 'object' && !data.legacy) {
-          firebaseDb.collection('quiz_results').add({
-            deviceId: getDeviceId(),
-            userName: data.userName || '',
-            correctCount: data.correctCount || 0,
-            status: data.status || '',
-            detail: data.detail || '',
-            prize: data.prize || '',
-            timeStr: data.timeStr || '',
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          }).then(function() { console.log('已保存到云端'); }).catch(function(e) { console.error('保存失败:', e); });
-        }
+        trySaveToFirebase(data);
       } catch (e) {}
     }
 
@@ -1282,6 +1311,10 @@
     }
 
     (function init() {
+      if (/MicroMessenger/i.test(navigator.userAgent)) {
+        var tip = document.getElementById('wechat-tip');
+        if (tip) tip.style.display = 'block';
+      }
       if (firebaseDb) {
         firebaseDb.collection('quiz_results').where('deviceId', '==', getDeviceId()).limit(1).get()
           .then(function(snap) {
