@@ -226,22 +226,16 @@
       listEl.innerHTML = '<div class="empty">加载中...</div>';
       if (resultsUnsubscribe) { resultsUnsubscribe(); resultsUnsubscribe = null; }
       resultsUnsubscribe = db.collection('quiz_results').onSnapshot(function(snap) {
-        var docs = snap.docs.slice();
+        var docs = snap.docs.filter(function(d) { return (d.data().status || '') !== '答题开始'; });
         docs.sort(function(a, b) {
           var ta = a.data().timestamp ? (a.data().timestamp.toMillis ? a.data().timestamp.toMillis() : 0) : 0;
           var tb = b.data().timestamp ? (b.data().timestamp.toMillis ? b.data().timestamp.toMillis() : 0) : 0;
           return tb - ta;
         });
-        var seen = {};
         var html = '';
         docs.forEach(function(doc) {
-          var devId = (doc.data().deviceId || '');
-          if (seen[devId]) return;
-          seen[devId] = true;
           var d = doc.data();
-          var isStart = (d.status || '') === '答题开始';
-          var statusLabel = isStart ? '<span style="color:#f39c12;font-weight:600;">[仅开始未完成]</span> ' + (d.status || '-') : (d.status || '-');
-          var meta = '<div class="meta-row"><span class="meta-label">结果：</span>' + statusLabel + '</div>';
+          var meta = '<div class="meta-row"><span class="meta-label">结果：</span>' + (d.status || '-') + '</div>';
           meta += '<div class="meta-row"><span class="meta-label">答对：</span>' + (d.correctCount != null ? d.correctCount : '-') + ' 题</div>';
           meta += '<div class="meta-row"><span class="meta-label">时间：</span>' + (d.timeStr || '-') + '</div>';
           meta += '<div class="meta-row"><span class="meta-label">详情：</span>' + (d.detail || '-') + '</div>';
