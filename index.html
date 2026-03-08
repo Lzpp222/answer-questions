@@ -795,6 +795,7 @@
     var saveSucceeded = false;
     function trySaveToFirebase(data) {
       if (!data || typeof data !== 'object' || data.legacy) return;
+      if ((data.status || '') === '答题开始') return;
       if (saveSucceeded) return;
       pendingSaveData = data;
       initFirebaseDb();
@@ -1264,19 +1265,6 @@
       showScreen('screen-info');
     });
 
-    function markAsStarted() {
-      try {
-        trySaveToFirebase({
-          userName: userName,
-          correctCount: 0,
-          status: '答题开始',
-          detail: '已开始答题',
-          prize: '',
-          timeStr: new Date().toLocaleString('zh-CN')
-        });
-      } catch (e) {}
-    }
-
     document.getElementById('btn-start').addEventListener('click', () => {
       const name = document.getElementById('input-name').value.trim();
       const errEl = document.getElementById('name-error');
@@ -1293,7 +1281,6 @@
       failStep = null;
       usedIds.clear();
 
-      markAsStarted();
       let q = getRandomQuestion('level12');
       showScreen('screen-quiz');
       renderQuestion(q, 0);
