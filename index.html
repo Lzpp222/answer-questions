@@ -734,9 +734,9 @@
       };
     }
   </script>
-  <!-- 优先使用国内 BootCDN，微信环境可能更稳定 -->
-  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js'"></script>
-  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js'"></script>
+  <!-- 与 firebase-test.html 保持一致，使用 Google 官方 CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
   <script>
     const STORAGE_KEY = 'sannong_quiz_done';
     const DEVICE_ID_KEY = 'sannong_device_id';
@@ -754,14 +754,16 @@
 
     var firebaseDb = null;
     function initFirebaseDb() {
-      if (firebaseDb) return;
-      if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) return;
-      if (typeof firebase === 'undefined') return;
+      if (firebaseDb) return firebaseDb;
+      var cfg = typeof FIREBASE_CONFIG !== 'undefined' ? FIREBASE_CONFIG : window.FIREBASE_CONFIG;
+      if (!cfg || !cfg.apiKey) { console.warn('[Firebase] 配置缺失'); return null; }
+      if (typeof firebase === 'undefined') { console.warn('[Firebase] SDK 未加载'); return null; }
       try {
         var fbApp;
-        try { fbApp = firebase.app(); } catch (_) { fbApp = firebase.initializeApp(FIREBASE_CONFIG); }
+        try { fbApp = firebase.app(); } catch (_) { fbApp = firebase.initializeApp(cfg); }
         firebaseDb = firebase.firestore(fbApp);
-      } catch (e) {}
+        return firebaseDb;
+      } catch (e) { console.warn('[Firebase] 初始化失败:', e.message || e); return null; }
     }
     initFirebaseDb();
     if (!firebaseDb && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
@@ -828,7 +830,10 @@
           prize: toSave.prize || '',
           timeStr: toSave.timeStr || '',
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function() { console.log('已保存到云端'); }).catch(function(e) { console.error('保存失败:', e); });
+        }).then(function() { console.log('[Firebase] 已保存到云端'); }).catch(function(e) {
+          console.error('[Firebase] 保存失败:', e.code || e.message, e);
+          if (e.code === 'permission-denied') console.error('[Firebase] 请检查 Firestore 规则是否允许写入');
+        });
       } else {
         setTimeout(function() { initFirebaseDb(); if (pendingSaveData && firebaseDb) trySaveToFirebase(pendingSaveData); }, 500);
         setTimeout(function() { initFirebaseDb(); if (pendingSaveData && firebaseDb) trySaveToFirebase(pendingSaveData); }, 1500);
