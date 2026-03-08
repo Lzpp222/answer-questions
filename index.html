@@ -706,6 +706,7 @@
         <div class="screenshot-tip">
           📸 请截屏此页面，到工作人员处领取奖励。若后台未显示记录，可点击下方按钮复制结果发送给工作人员。
         </div>
+        <p id="save-fail-hint" style="display:none;margin-top:10px;padding:10px;background:#ffe6e6;border:1px solid #f5c6cb;border-radius:8px;font-size:0.9rem;color:#721c24;">⚠️ 云端保存可能失败（手机网络限制），请务必点击下方按钮复制结果发送给工作人员。</p>
         <div class="copy-result-wrap" style="margin-top: 14px;">
           <button type="button" id="btn-copy-result" class="btn btn-outline" style="font-size: 0.95rem;">
             📋 复制答题结果（可粘贴发给工作人员）
@@ -738,9 +739,9 @@
       };
     }
   </script>
-  <!-- 优先 gstatic，失败时回退到 BootCDN（国内移动网络可能无法访问 gstatic） -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js';document.head.appendChild(s);"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js';document.head.appendChild(s);"></script>
+  <!-- 使用国内 BootCDN（手机/国内网络访问 gstatic 常失败），失败时回退 gstatic -->
+  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-app-compat.min.js" onerror="this.onerror=null;this.src='https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js'"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/firebase/10.7.0/firebase-firestore-compat.min.js" onerror="this.onerror=null;this.src='https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js'"></script>
   <script>
     const DEVICE_ID_KEY = 'sannong_device_id';
     const TIME_LIMITS = [20, 20, 30, 40, 40]; // 第1-5题时限（秒）
@@ -769,8 +770,7 @@
     }
     initFirebaseDb();
     if (!firebaseDb && typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
-      setTimeout(initFirebaseDb, 1000);
-      setTimeout(initFirebaseDb, 2500);
+      [1000, 2500, 5000].forEach(function(ms) { setTimeout(initFirebaseDb, ms); });
     }
 
     // 题目数据：内嵌于页面，无外部依赖，手机端稳定加载
@@ -817,7 +817,7 @@
           if (e.code === 'permission-denied') console.error('[Firebase] 请检查 Firestore 规则是否允许写入');
         });
       }
-      [500, 1500, 3000, 5000].forEach(function(ms) {
+      [500, 1500, 3000, 5000, 8000, 12000].forEach(function(ms) {
         setTimeout(function() {
           if (saveSucceeded || !pendingSaveData) return;
           initFirebaseDb();
@@ -1223,8 +1223,15 @@
       prizeEl.textContent = (!success && !userQuit) ? '参与奖：自选一张明信片或书签' : getPrizeText(correctCount);
 
       document.getElementById('copy-result-msg').style.display = 'none';
+      document.getElementById('save-fail-hint').style.display = 'none';
       var copyBtn = document.getElementById('btn-copy-result');
       if (copyBtn) copyBtn.onclick = copyResultToClipboard;
+      setTimeout(function() {
+        if (!saveSucceeded && pendingSaveData) {
+          var h = document.getElementById('save-fail-hint');
+          if (h) h.style.display = 'block';
+        }
+      }, 15000);
 
       const statusText = userQuit ? '主动结束' : (success ? '挑战成功' : '挑战失败');
       let detailText = '';
