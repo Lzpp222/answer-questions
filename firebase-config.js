@@ -6,12 +6,11 @@
 // 5. 规则设为：allow read, write: if true; （仅用于活动，生产环境请加强安全）
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyCbvuztTW-syhjAqwp2uAH2SamUM1CEFOM",
-    authDomain: "answer-recode.firebaseapp.com",
-    projectId: "answer-recode",
-    storageBucket: "answer-recode.firebasestorage.app",
-    messagingSenderId: "432504572951",
-    appId: "1:432504572951:web:1aa282e57aa0ab2f63a052",
-    measurementId: "G-8T6CEQLYE2"
+  authDomain: "answer-recode.firebaseapp.com",
+  projectId: "answer-recode",
+  storageBucket: "answer-recode.firebasestorage.app",
+  messagingSenderId: "432504572951",
+  appId: "1:432504572951:web:1aa282e57aa0ab2f63a052",
+  measurementId: "G-8T6CEQLYE2"
 };
 // 若以上为空，答题页仅用本地存储；管理员页可查看题目，但无法查看/删除作答记录
-
