@@ -700,7 +700,13 @@
           <div class="content" id="result-prize">-</div>
         </div>
         <div class="screenshot-tip">
-          📸 请截屏此页面，到工作人员处领取奖励
+          📸 请截屏此页面，到工作人员处领取奖励。若后台未显示记录，可点击下方按钮复制结果发送给工作人员。
+        </div>
+        <div class="copy-result-wrap" style="margin-top: 14px;">
+          <button type="button" id="btn-copy-result" class="btn btn-outline" style="font-size: 0.95rem;">
+            📋 复制答题结果（可粘贴发给工作人员）
+          </button>
+          <p id="copy-result-msg" style="display:none;font-size:0.85rem;color:var(--success);margin-top:8px;">已复制到剪贴板</p>
         </div>
         <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 16px;">
           对三农学会感兴趣？扫码加入我们
@@ -864,6 +870,37 @@
       if (count >= 3) return '可获得三农学会卡套';
       if (count >= 1) return '可自选三张明信片或书签';
       return '参与奖：自选一张明信片或书签';
+    }
+
+    function copyResultToClipboard() {
+      var name = (document.getElementById('result-name') || {}).textContent || '';
+      var time = (document.getElementById('result-time') || {}).textContent || '';
+      var status = (document.getElementById('result-status') || {}).textContent || '';
+      var detail = (document.getElementById('result-detail') || {}).textContent || '';
+      var prize = (document.getElementById('result-prize') || {}).textContent || '';
+      var txt = '【三农学会答题结果】\n姓名：' + name + '\n完成时间：' + time + '\n结果：' + status + (detail ? '\n详情：' + detail : '') + '\n奖励：' + prize;
+      var msgEl = document.getElementById('copy-result-msg');
+      function showOk() { if (msgEl) { msgEl.textContent = '已复制到剪贴板'; msgEl.style.display = 'block'; setTimeout(function(){ msgEl.style.display = 'none'; }, 2500); } }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(showOk).catch(function() {
+          fallbackCopy(txt, showOk);
+        });
+      } else {
+        fallbackCopy(txt, showOk);
+      }
+    }
+    function fallbackCopy(text, onDone) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        onDone && onDone();
+      } catch (e) {}
+      document.body.removeChild(ta);
     }
 
     function showScreen(id) {
@@ -1201,6 +1238,10 @@
 
       prizeEl.textContent = (!success && !userQuit) ? '参与奖：自选一张明信片或书签' : getPrizeText(correctCount);
 
+      document.getElementById('copy-result-msg').style.display = 'none';
+      var copyBtn = document.getElementById('btn-copy-result');
+      if (copyBtn) copyBtn.onclick = copyResultToClipboard;
+
       const statusText = userQuit ? '主动结束' : (success ? '挑战成功' : '挑战失败');
       let detailText = '';
       if (userQuit) detailText = '答对 ' + correctCount + ' 道题后选择结束作答';
@@ -1329,9 +1370,14 @@
               });
               showScreen('screen-done');
             } else {
-              localStorage.removeItem(STORAGE_KEY);
-              loadQuestions();
-              showScreen('screen-rules');
+              var stored = getStoredResult();
+              if (stored) {
+                showStoredResult(stored);
+                showScreen('screen-done');
+              } else {
+                loadQuestions();
+                showScreen('screen-rules');
+              }
             }
           })
           .catch(function() {
