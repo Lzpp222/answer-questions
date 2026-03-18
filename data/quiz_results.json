@@ -119,5 +119,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/18 20:11:10",
     "timestamp": 1773835870691
+  },
+  {
+    "id": "gh_1773835940582_rzlnbt",
+    "deviceId": "smmw03v6s2tv40153ni",
+    "userName": "LucasXu80",
+    "correctCount": 1,
+    "status": "主动结束",
+    "detail": "答对 1 道题后选择结束作答",
+    "prize": "可自选三张明信片或书签",
+    "timeStr": "2026/3/18 20:12:30",
+    "timestamp": 1773835940582
   }
 ]
