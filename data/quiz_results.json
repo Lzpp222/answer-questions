@@ -790,5 +790,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/19 13:00:09",
     "timestamp": 1773896409751
+  },
+  {
+    "id": "gh_1773896457244_gejom0",
+    "deviceId": "smmx044ya0ogv20d3g1",
+    "userName": "sj",
+    "correctCount": 3,
+    "status": "主动结束",
+    "detail": "答对 3 道题后选择结束作答",
+    "prize": "可获得三农学会卡套",
+    "timeStr": "2026/3/19 13:00:57",
+    "timestamp": 1773896457244
   }
 ]
