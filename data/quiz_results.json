@@ -361,5 +361,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/19 12:30:07",
     "timestamp": 1773894607898
+  },
+  {
+    "id": "gh_1773894752007_98onac",
+    "deviceId": "smmwz45ft24tq03qzfi",
+    "userName": "许思齐",
+    "correctCount": 1,
+    "status": "挑战失败",
+    "detail": "第 2 题切屏",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/19 12:32:31",
+    "timestamp": 1773894752007
   }
 ]
