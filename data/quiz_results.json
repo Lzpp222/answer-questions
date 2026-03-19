@@ -801,5 +801,16 @@
     "prize": "可获得三农学会卡套",
     "timeStr": "2026/3/19 13:00:57",
     "timestamp": 1773896457244
+  },
+  {
+    "id": "gh_1773896504972_rxzd3m",
+    "deviceId": "smmx05rtof4dxsz2cn6",
+    "userName": "陈晨舒",
+    "correctCount": 1,
+    "status": "挑战失败",
+    "detail": "第 2 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/19 13:01:44",
+    "timestamp": 1773896504972
   }
 ]
