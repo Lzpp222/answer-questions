@@ -845,5 +845,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/19 13:03:17",
     "timestamp": 1773896597812
+  },
+  {
+    "id": "gh_1773896616308_2uwgea",
+    "deviceId": "smmx0832anz6cmsh8af",
+    "userName": "刘",
+    "correctCount": 2,
+    "status": "主动结束",
+    "detail": "答对 2 道题后选择结束作答",
+    "prize": "可自选三张明信片或书签",
+    "timeStr": "2026/3/19 13:03:36",
+    "timestamp": 1773896616308
   }
 ]
