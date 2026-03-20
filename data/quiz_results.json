@@ -1516,5 +1516,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/20 12:06:26",
     "timestamp": 1773979585668
+  },
+  {
+    "id": "gh_1773979774508_1ksu57",
+    "deviceId": "smmydq7ya7fu3487d0y",
+    "userName": "王巍霖",
+    "correctCount": 1,
+    "status": "挑战失败",
+    "detail": "第 2 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/20 12:09:34",
+    "timestamp": 1773979774508
   }
 ]
