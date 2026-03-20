@@ -2033,5 +2033,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/20 12:44:09",
     "timestamp": 1773981849185
+  },
+  {
+    "id": "gh_1773981876539_uoofnc",
+    "deviceId": "smmyez4qqu8jpzsp6fu",
+    "userName": "苏苏",
+    "correctCount": 2,
+    "status": "挑战失败",
+    "detail": "第 3 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/20 12:44:35",
+    "timestamp": 1773981876539
   }
 ]
