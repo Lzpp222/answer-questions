@@ -1648,5 +1648,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/20 12:17:37",
     "timestamp": 1773980258315
+  },
+  {
+    "id": "gh_1773980270781_onfvmb",
+    "deviceId": "smmye09ihkl4vwdzs2i",
+    "userName": "蔡文姬",
+    "correctCount": 2,
+    "status": "挑战失败",
+    "detail": "第 3 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/20 12:17:48",
+    "timestamp": 1773980270781
   }
 ]
