@@ -1626,5 +1626,16 @@
     "prize": "参与奖：自选一张明信片或书签",
     "timeStr": "2026/3/20 12:16:46",
     "timestamp": 1773980207329
+  },
+  {
+    "id": "gh_1773980216059_uki175",
+    "deviceId": "smmydzrc400hzak5g2d",
+    "userName": "李白",
+    "correctCount": 0,
+    "status": "挑战失败",
+    "detail": "第 1 题切屏",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/20 12:16:56",
+    "timestamp": 1773980216059
   }
 ]
