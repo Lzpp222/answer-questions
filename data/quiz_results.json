@@ -2066,5 +2066,16 @@
     "prize": "可自选一本相关书籍",
     "timeStr": "2026/3/20 12:45:16",
     "timestamp": 1773981917605
+  },
+  {
+    "id": "gh_1773981920501_q7vz4c",
+    "deviceId": "smmyf0lyzsosu92x87e",
+    "userName": "2025213264",
+    "correctCount": 0,
+    "status": "挑战失败",
+    "detail": "第 1 题答错",
+    "prize": "参与奖：自选一张明信片或书签",
+    "timeStr": "2026/3/20 12:45:21",
+    "timestamp": 1773981920501
   }
 ]
